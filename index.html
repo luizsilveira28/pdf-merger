@@ -27,9 +27,36 @@
         <div class="status" id="status"></div>
     </div>
 
+    <!-- Seção de Etiqueta de Agradecimento -->
+    <h1>🎁 Etiqueta de Agradecimento</h1>
+    <div class="container">
+        <label>Escolha um ícone:</label>
+        <div class="icon-selector" id="iconSelector">
+            <!-- Carregado dinamicamente -->
+        </div>
+
+        <label>Texto de agradecimento:</label>
+        <input type="text" id="thankYouText" placeholder="Ex: Obrigado Elaine" value="Obrigado!">
+
+        <label>Prévia:</label>
+        <div class="preview-container">
+            <div class="thank-you-label" id="labelPreview">
+                <div class="label-icon" id="previewIcon">
+                    <img src="images/Harry-Potter-Glasses.png" alt="Harry Potter" width="80">
+                </div>
+                <div class="label-text" id="previewText">Obrigado!</div>
+            </div>
+        </div>
+
+        <button id="downloadLabelBtn">Baixar Etiqueta (PDF 50x25mm)</button>
+    </div>
+
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="js/thermal.js"></script>
     <script src="js/a4.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/icon-data.js"></script>
+    <script src="js/thank-you.js"></script>
 </body>
 </html>
