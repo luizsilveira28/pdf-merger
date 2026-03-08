@@ -425,3 +425,11 @@ input[type="text"]:focus {
 .btn-row button {
     flex: 1;
 }
+
+
+/* Esconder em mobile */
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none !important;
+    }
+}

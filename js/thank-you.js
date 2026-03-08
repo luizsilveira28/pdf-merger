@@ -101,4 +101,73 @@ document.getElementById('downloadLabelBtn').addEventListener('click', async () =
     link.click();
 });
 
+document.getElementById('imprimirBtn').addEventListener('click', () => {
+    const label = document.getElementById('labelPreview');
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Imprimir Etiqueta</title>
+            <style>
+                @page {
+                    size: 51mm 25mm;
+                    margin: 0;
+                }
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    width: 51mm;
+                    height: 25mm;
+                }
+                .thank-you-label {
+                    background: white;
+                    width: 51mm;
+                    height: 25mm;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                .label-icon {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding-top: 2mm;
+                }
+                .label-icon img {
+                    max-width: 15mm;
+                    max-height: 12mm;
+                    object-fit: contain;
+                }
+                .label-text {
+                    font-family: Arial, sans-serif;
+                    font-size: 8pt;
+                    font-weight: 600;
+                    color: #333;
+                    padding: 1mm;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            ${label.outerHTML}
+            <script>
+                window.onload = () => {
+                    window.print();
+                    window.close();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+});
+
 renderIconSelector();

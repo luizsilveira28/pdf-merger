@@ -1,9 +1,17 @@
 // Controle principal da aplicação
 const pdfInput = document.getElementById('pdfInput');
 const processBtn = document.getElementById('processBtn');
+const imprimirBtn = document.getElementById('imprimirBtn');
 const status = document.getElementById('status');
 
-pdfInput.onchange = () => processBtn.disabled = !pdfInput.files.length;
+let lastPdfBytes = null;
+let lastFilename = null;
+
+pdfInput.onchange = () => {
+    const hasFile = pdfInput.files.length > 0;
+    processBtn.disabled = !hasFile;
+    imprimirBtn.disabled = !hasFile;
+};
 
 processBtn.onclick = async () => {
     try {
@@ -28,6 +36,9 @@ processBtn.onclick = async () => {
             filename = 'etiqueta_a4.pdf';
         }
 
+        lastPdfBytes = pdfBytes;
+        lastFilename = filename;
+
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         
@@ -42,5 +53,40 @@ processBtn.onclick = async () => {
     } catch (e) {
         status.textContent = 'Erro: ' + e.message;
         processBtn.disabled = false;
+    }
+};
+
+imprimirBtn.onclick = async () => {
+    try {
+        status.textContent = 'Processando para impressão...';
+        imprimirBtn.disabled = true;
+
+        const format = document.querySelector('input[name="format"]:checked').value;
+        const fileBytes = await pdfInput.files[0].arrayBuffer();
+        const srcDoc = await PDFLib.PDFDocument.load(fileBytes);
+
+        let pdfBytes;
+
+        if (format === 'thermal') {
+            pdfBytes = await processThermal(srcDoc);
+        } else if (format === 'single') {
+            pdfBytes = await processSingle(srcDoc);
+        } else {
+            pdfBytes = await processA4(srcDoc);
+        }
+
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        const printWindow = window.open(url, '_blank');
+        printWindow.onload = () => {
+            printWindow.print();
+        };
+        
+        status.textContent = 'Pronto!';
+        imprimirBtn.disabled = false;
+    } catch (e) {
+        status.textContent = 'Erro: ' + e.message;
+        imprimirBtn.disabled = false;
     }
 };
