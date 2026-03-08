@@ -6,6 +6,8 @@
     <title>Etiqueta de Agradecimento - Gerador de Etiquetas</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/global.js" defer></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6461956943917786" crossorigin="anonymous"></script>
 </head>
 <body>
     <nav class="breadcrumb">
@@ -16,31 +18,56 @@
     <div class="container">
         <div class="layout-split">
             <div class="controls">
-                <label>Escolha um ícone:</label>
-                <div class="icon-selector" id="iconSelector">
-                    <!-- Carregado dinamicamente -->
-                </div>
+                <div id="labelControls" style="display: none;">
+                    <label>Escolha um ícone:</label>
+                    <div class="icon-selector" id="iconSelector">
+                        <!-- Carregado dinamicamente -->
+                    </div>
 
-                <label>Texto de agradecimento:</label>
-                <input type="text" id="thankYouText" placeholder="Ex: Obrigado Elaine" value="Obrigado!">
+                    <label>Texto de agradecimento:</label>
+                    <input type="text" id="thankYouText" value="">
+                    
+                    <label>Templates rápidos:</label>
+                    <div class="template-buttons" id="templateButtons">
+                        <button type="button" class="template-btn" data-text="Obrigado pela compra!">Obrigado pela compra!</button>
+                        <button type="button" class="template-btn" data-text="Compre de novo!">Compre de novo!</button>
+                        <button type="button" class="template-btn" data-text="Obrigado! ❤️">Obrigado! ❤️</button>
+                        <button type="button" class="template-btn" data-text="Feito com carinho!">Feito com carinho!</button>
+                        <button type="button" class="template-btn" data-text="Avalie 5 estrelas!">Avalie 5 estrelas!</button>
+                    </div>
+                </div>
             </div>
 
             <div class="preview-side">
                 <label>Prévia:</label>
                 <div class="preview-container">
-                    <div class="thank-you-label" id="labelPreview">
-                        <div class="label-icon" id="previewIcon">
-                            <img src="images/Harry-Potter-Glasses.png" alt="Harry Potter" width="80">
-                        </div>
-                        <div class="label-text" id="previewText">Obrigado!</div>
+                    <div class="thank-you-label" id="labelPreview" style="display: none;">
+                        <div class="label-icon" id="previewIcon"></div>
+                        <div class="label-text" id="previewText"></div>
                     </div>
                 </div>
+
+                <div class="csv-nav" id="labelNav" style="display: none;">
+                    <button type="button" id="labelPrev">←</button>
+                    <span id="labelPageInfo">1 / 1</span>
+                    <button type="button" id="labelNext">→</button>
+                </div>
+                
+                <button type="button" id="addLabel" class="btn-add">+ Adicionar etiqueta</button>
 
                 <div class="btn-row">
                     <button id="imprimirBtn" class="hide-mobile">🖨️ Imprimir</button>
                     <button id="downloadLabelBtn">📄 Gerar PDF</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Zoom -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content modal-simple">
+            <button class="modal-close" id="modalClose">✕</button>
+            <div class="modal-preview-container" id="modalPreviewContainer"></div>
         </div>
     </div>
 

@@ -395,4 +395,14 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
         modalOverlay.classList.remove('active');
     }
+    // Atalhos de teclado
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'p') {
+            e.preventDefault();
+            if (!imprimirBtn.disabled) imprimirBtn.click();
+        } else if (e.key === 's') {
+            e.preventDefault();
+            if (!processBtn.disabled) processBtn.click();
+        }
+    }
 });

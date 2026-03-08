@@ -6,16 +6,22 @@ const tamanhoProduto = document.getElementById('tamanhoProduto');
 const codigoBarras = document.getElementById('codigoBarras');
 const precoProduto = document.getElementById('precoProduto');
 const mostrarPreco = document.getElementById('mostrarPreco');
+const qrcodeContent = document.getElementById('qrcodeContent');
 const precoContainer = document.getElementById('precoContainer');
+const barcodeContainer = document.getElementById('barcodeContainer');
+const qrcodeContainer = document.getElementById('qrcodeContainer');
+const codigoTipoRadios = document.querySelectorAll('input[name="codigoTipo"]');
 const gerarBtn = document.getElementById('gerarBtn');
-const status = document.getElementById('status');
+const statusEl = document.getElementById('status');
 
 const previewImg = document.getElementById('previewImg');
+const imgContainer = document.getElementById('imgContainer');
 const previewNome = document.getElementById('previewNome');
 const previewTamanho = document.getElementById('previewTamanho');
 const previewCor = document.getElementById('previewCor');
 const previewRef = document.getElementById('previewRef');
 const previewBarcode = document.getElementById('previewBarcode');
+const previewQrcode = document.getElementById('previewQrcode');
 const previewPreco = document.getElementById('previewPreco');
 
 const imgOptions = document.querySelectorAll('.img-option');
@@ -23,7 +29,33 @@ const imgMocassim = document.getElementById('imgMocassim');
 const imgAlpargata = document.getElementById('imgAlpargata');
 
 let imagemBase64 = null;
+let imagemGrayscale = null;
 let tipoImagem = 'custom';
+
+// Converter para grayscale
+function toGrayscale(base64) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = base64;
+    });
+}
 
 // Carregar ícones predefinidos
 const iconMap = {};
@@ -33,32 +65,71 @@ PRODUCT_ICONS.forEach(icon => {
 if (iconMap.mocassim) imgMocassim.src = iconMap.mocassim;
 if (iconMap.alpargata) imgAlpargata.src = iconMap.alpargata;
 
+// Carregar preferências do localStorage
+function loadPreferences() {
+    const prefs = JSON.parse(localStorage.getItem('productLabelPrefs') || '{}');
+    // Preço default: não mostrar
+    mostrarPreco.checked = prefs.mostrarPreco === true ? true : false;
+    if (prefs.codigoTipo) {
+        const radio = document.querySelector(`input[name="codigoTipo"][value="${prefs.codigoTipo}"]`);
+        if (radio) radio.checked = true;
+    }
+    updateVisibility();
+}
+
+function savePreferences() {
+    localStorage.setItem('productLabelPrefs', JSON.stringify({
+        mostrarPreco: mostrarPreco.checked,
+        codigoTipo: getCodigoTipo()
+    }));
+}
+
+function getCodigoTipo() {
+    return document.querySelector('input[name="codigoTipo"]:checked').value;
+}
+
+function updateVisibility() {
+    const tipo = getCodigoTipo();
+    precoContainer.style.display = mostrarPreco.checked ? 'block' : 'none';
+    previewPreco.style.display = mostrarPreco.checked ? 'block' : 'none';
+    barcodeContainer.style.display = tipo === 'barcode' ? 'block' : 'none';
+    previewBarcode.style.display = tipo === 'barcode' ? 'block' : 'none';
+    qrcodeContainer.style.display = tipo === 'qrcode' ? 'block' : 'none';
+    previewQrcode.style.display = tipo === 'qrcode' ? 'block' : 'none';
+    
+    if (tipo === 'barcode') updateBarcode();
+    if (tipo === 'qrcode') updateQrcode();
+    
+    savePreferences();
+}
+
 // Seleção de tipo de imagem
 imgOptions.forEach(opt => {
-    opt.addEventListener('click', () => {
+    opt.addEventListener('click', async () => {
         const tipo = opt.dataset.type;
-        
         if (tipo === 'custom') {
-            // Abre seletor de arquivos
             imgInput.click();
         } else {
             imgOptions.forEach(o => o.classList.remove('selected'));
             opt.classList.add('selected');
             tipoImagem = tipo;
             imagemBase64 = iconMap[tipoImagem];
-            previewImg.src = imagemBase64;
+            imagemGrayscale = await toGrayscale(imagemBase64);
+            previewImg.src = imagemGrayscale;
+            imgContainer.style.display = 'flex';
         }
     });
 });
 
-imgInput.onchange = (e) => {
+imgInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = (ev) => {
+        reader.onload = async (ev) => {
             imagemBase64 = ev.target.result;
-            previewImg.src = imagemBase64;
-            // Seleciona o botão custom
+            imagemGrayscale = await toGrayscale(imagemBase64);
+            previewImg.src = imagemGrayscale;
+            imgContainer.style.display = 'flex';
             imgOptions.forEach(o => o.classList.remove('selected'));
             document.querySelector('[data-type="custom"]').classList.add('selected');
             tipoImagem = 'custom';
@@ -67,276 +138,568 @@ imgInput.onchange = (e) => {
     }
 };
 
-mostrarPreco.onchange = () => {
-    precoContainer.style.display = mostrarPreco.checked ? 'block' : 'none';
-    previewPreco.style.display = mostrarPreco.checked ? 'block' : 'none';
+mostrarPreco.onchange = updateVisibility;
+codigoTipoRadios.forEach(radio => {
+    radio.onchange = updateVisibility;
+});
+
+nomeProduto.oninput = updateNomeCor;
+corProduto.oninput = updateNomeCor;
+
+function updateNomeCor() {
+    const nome = nomeProduto.value.trim();
+    const cor = corProduto.value.trim();
+    previewNome.textContent = nome;
+    previewCor.textContent = (nome && cor) ? ` - ${cor}` : cor;
+}
+
+refProduto.oninput = () => {
+    const ref = refProduto.value.trim();
+    previewRef.textContent = ref ? `Ref: ${ref}` : '';
 };
+tamanhoProduto.oninput = () => previewTamanho.textContent = tamanhoProduto.value;
 
-nomeProduto.oninput = () => previewNome.textContent = nomeProduto.value || 'Nome';
-refProduto.oninput = () => previewRef.textContent = `Ref: ${refProduto.value || '-'}`;
-corProduto.oninput = () => previewCor.textContent = corProduto.value || '-';
-tamanhoProduto.oninput = () => previewTamanho.textContent = tamanhoProduto.value || '-';
-
-codigoBarras.oninput = () => {
-    const codigo = codigoBarras.value || '000000000';
+function updateBarcode() {
+    if (getCodigoTipo() !== 'barcode') {
+        previewBarcode.style.display = 'none';
+        return;
+    }
+    const codigo = codigoBarras.value.trim();
+    if (!codigo) {
+        previewBarcode.style.display = 'none';
+        return;
+    }
+    previewBarcode.style.display = 'block';
     try {
         JsBarcode(previewBarcode, codigo, {
-            format: 'EAN13', width: 1.8, height: 38, displayValue: true, fontSize: 10, margin: 0
+            format: 'EAN13', width: 2, height: 35, displayValue: true, fontSize: 12, margin: 0
         });
     } catch {
         JsBarcode(previewBarcode, codigo, {
-            format: 'CODE128', width: 1.5, height: 38, displayValue: true, fontSize: 10, margin: 0
+            format: 'CODE128', width: 1.5, height: 35, displayValue: true, fontSize: 12, margin: 0
         });
     }
-};
+}
 
-precoProduto.oninput = () => previewPreco.textContent = `R$ ${precoProduto.value || '0,00'}`;
+let qrCodeInstance = null;
 
-gerarBtn.onclick = async () => {
-    if (!imagemBase64) {
-        status.textContent = 'Selecione uma imagem!';
+async function updateQrcode() {
+    if (getCodigoTipo() !== 'qrcode') {
+        previewQrcode.innerHTML = '';
+        previewQrcode.style.display = 'none';
+        qrCodeInstance = null;
         return;
     }
-
+    const content = qrcodeContent.value.trim();
+    if (!content) {
+        previewQrcode.innerHTML = '';
+        previewQrcode.style.display = 'none';
+        qrCodeInstance = null;
+        return;
+    }
+    previewQrcode.style.display = 'block';
     try {
-        status.textContent = 'Gerando PDF...';
-        gerarBtn.disabled = true;
+        previewQrcode.innerHTML = '';
+        qrCodeInstance = new QRCode(previewQrcode, {
+            text: content,
+            width: 65,
+            height: 65,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    } catch (e) {
+        console.error('QRCode error:', e);
+        previewQrcode.innerHTML = '';
+    }
+}
 
-        const pdfDoc = await PDFLib.PDFDocument.create();
+codigoBarras.oninput = updateBarcode;
+qrcodeContent.oninput = updateQrcode;
+precoProduto.oninput = () => previewPreco.textContent = `R$ ${precoProduto.value || '0,00'}`;
+
+async function gerarPdfBytes() {
+    const preview = document.getElementById('preview');
+    
+    // Remover borda temporariamente
+    const originalBorder = preview.style.border;
+    preview.style.border = 'none';
+    
+    // Capturar preview como imagem
+    const canvas = await html2canvas(preview, { scale: 4, backgroundColor: '#ffffff' });
+    
+    // Restaurar borda
+    preview.style.border = originalBorder;
+    
+    // PDF 51mm x 25mm
+    const mmToPt = 2.83465;
+    const pdfWidth = 51 * mmToPt;
+    const pdfHeight = 25 * mmToPt;
+    
+    const pdfDoc = await PDFLib.PDFDocument.create();
+    const page = pdfDoc.addPage([pdfWidth, pdfHeight]);
+    
+    const pngData = canvas.toDataURL('image/png');
+    const pngBytes = Uint8Array.from(atob(pngData.split(',')[1]), c => c.charCodeAt(0));
+    const pdfImage = await pdfDoc.embedPng(pngBytes);
+    
+    // Margem de 2pt para não cortar bordas
+    const margin = 2;
+    page.drawImage(pdfImage, { 
+        x: margin, 
+        y: margin, 
+        width: pdfWidth - (margin * 2), 
+        height: pdfHeight - (margin * 2) 
+    });
+
+    return await pdfDoc.save();
+}
+
+// Imprimir
+const imprimirBtn = document.getElementById('imprimirBtn');
+imprimirBtn.onclick = async () => {
+    try {
+        statusEl.textContent = 'Preparando impressão...';
+        imprimirBtn.disabled = true;
+
+        let pdfBytes;
         
-        // 51mm x 25mm em pontos (1mm = 2.83465pt)
-        const largura = 51 * 2.83465;
-        const altura = 25 * 2.83465;
+        if (csvProdutos.length > 0) {
+            // Imprimir todos do CSV
+            saveCurrentProduct();
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            const savedIndex = currentCsvIndex;
 
-        // Converter imagem para PNG em escala de cinza
-        const convertToGrayscalePng = (base64) => {
-            return new Promise((resolve) => {
-                const imgEl = new Image();
-                imgEl.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = imgEl.width;
-                    canvas.height = imgEl.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(imgEl, 0, 0);
-                    
-                    // Converter para escala de cinza
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-                        data[i] = gray;
-                        data[i + 1] = gray;
-                        data[i + 2] = gray;
-                    }
-                    ctx.putImageData(imageData, 0, 0);
-                    
-                    resolve(canvas.toDataURL('image/png'));
-                };
-                imgEl.src = base64;
-            });
-        };
+            for (let i = 0; i < csvProdutos.length; i++) {
+                statusEl.textContent = `Preparando ${i + 1}/${csvProdutos.length}...`;
+                fillPreviewWithProduct(csvProdutos[i]);
+                await new Promise(r => setTimeout(r, 300));
+                const pageBytes = await gerarPdfBytes();
+                const tempDoc = await PDFLib.PDFDocument.load(pageBytes);
+                const [page] = await pdfDoc.copyPages(tempDoc, [0]);
+                pdfDoc.addPage(page);
+            }
 
-        // Carregar imagem (sempre converte para escala de cinza)
-        const pngBase64 = await convertToGrayscalePng(imagemBase64);
-        const img = await pdfDoc.embedPng(pngBase64);
+            // Restaurar produto atual
+            fillPreviewWithProduct(csvProdutos[savedIndex]);
+            currentCsvIndex = savedIndex;
+            updateCsvNav();
 
-        // Gerar código de barras
-        const barcodeCanvas = document.createElement('canvas');
-        const codigo = codigoBarras.value || '000000000';
-        try {
-            JsBarcode(barcodeCanvas, codigo, {
-                format: 'EAN13', width: 2, height: 40, displayValue: true, fontSize: 12, margin: 0
-            });
-        } catch {
-            JsBarcode(barcodeCanvas, codigo, {
-                format: 'CODE128', width: 1.5, height: 40, displayValue: true, fontSize: 12, margin: 0
-            });
-        }
-        const barcodeImg = await pdfDoc.embedPng(barcodeCanvas.toDataURL('image/png'));
-
-        const page = pdfDoc.addPage([largura, altura]);
-        const { height } = page.getSize();
-
-        // Imagem grande à esquerda (centralizada verticalmente)
-        const imgMaxW = 50;
-        const imgMaxH = altura - 4;
-        const imgScale = Math.min(imgMaxW / img.width, imgMaxH / img.height);
-        const imgW = img.width * imgScale;
-        const imgH = img.height * imgScale;
-        const imgY = (altura - imgH) / 2;
-        
-        page.drawImage(img, {
-            x: 2,
-            y: imgY,
-            width: imgW,
-            height: imgH,
-        });
-
-        // Textos (direita)
-        const xText = 55;
-        const rightEdge = largura - 5;
-        
-        // Nome à esquerda
-        page.drawText(nomeProduto.value || 'Produto', {
-            x: xText, y: height - 12, size: 10,
-        });
-        
-        // Tamanho grande à direita
-        const tam = tamanhoProduto.value || '-';
-        const tamWidth = tam.length * 9;
-        page.drawText(tam, {
-            x: rightEdge - tamWidth, y: height - 12, size: 14,
-        });
-
-        // Cor (destaque)
-        page.drawText(corProduto.value || '-', {
-            x: xText, y: height - 23, size: 9,
-        });
-
-        // Ref
-        page.drawText(`Ref: ${refProduto.value || '-'}`, {
-            x: xText, y: height - 31, size: 6,
-        });
-
-        // Código de barras (mais perto dos textos)
-        const bcScale = Math.min(85 / barcodeImg.width, 32 / barcodeImg.height);
-        page.drawImage(barcodeImg, {
-            x: xText,
-            y: mostrarPreco.checked ? 12 : 2,
-            width: barcodeImg.width * bcScale,
-            height: barcodeImg.height * bcScale,
-        });
-
-        // Preço (opcional)
-        if (mostrarPreco.checked) {
-            page.drawText(`R$ ${precoProduto.value || '0,00'}`, {
-                x: xText + 20, y: 2, size: 9,
-            });
+            pdfBytes = await pdfDoc.save();
+        } else {
+            pdfBytes = await gerarPdfBytes();
         }
 
-        const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'etiqueta-produto.pdf';
-        a.click();
-
-        URL.revokeObjectURL(url);
-        status.textContent = 'PDF gerado!';
-        gerarBtn.disabled = false;
+        
+        const printWindow = window.open(url, '_blank');
+        printWindow.onload = () => printWindow.print();
+        
+        statusEl.textContent = '';
+        imprimirBtn.disabled = false;
     } catch (e) {
-        status.textContent = 'Erro: ' + e.message;
-        gerarBtn.disabled = false;
+        statusEl.textContent = 'Erro: ' + e.message;
+        imprimirBtn.disabled = false;
         console.error(e);
     }
 };
 
-codigoBarras.dispatchEvent(new Event('input'));
-
-// Imprimir direto
-const imprimirBtn = document.getElementById('imprimirBtn');
-imprimirBtn.onclick = () => {
-    if (!imagemBase64) {
-        status.textContent = 'Selecione uma imagem!';
-        return;
+// Atalhos de teclado
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+        modalOverlay.classList.remove('active');
     }
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'p') {
+            e.preventDefault();
+            imprimirBtn.click();
+        } else if (e.key === 's') {
+            e.preventDefault();
+            gerarBtn.click();
+        }
+    }
+});
 
-    // Criar janela de impressão com a etiqueta
-    const printWindow = window.open('', '_blank');
-    const preview = document.getElementById('preview');
+// Modal de Zoom
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const modalPreviewContainer = document.getElementById('modalPreviewContainer');
+const preview = document.getElementById('preview');
+
+preview.style.cursor = 'pointer';
+preview.onclick = () => {
+    modalPreviewContainer.innerHTML = '';
+    const clone = preview.cloneNode(true);
+    clone.style.border = '2px dashed #ddd';
+    modalPreviewContainer.appendChild(clone);
+    modalOverlay.classList.add('active');
+};
+
+modalClose.onclick = () => modalOverlay.classList.remove('active');
+modalOverlay.onclick = (e) => {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+};
+
+// Inicialização
+loadPreferences();
+if (getCodigoTipo() === 'barcode') updateBarcode();
+if (getCodigoTipo() === 'qrcode') updateQrcode();
+
+// CSV Import
+const csvInput = document.getElementById('csvInput');
+const importCsvBtn = document.getElementById('importCsv');
+const downloadTemplateBtn = document.getElementById('downloadTemplate');
+const csvInfo = document.getElementById('csvInfo');
+const csvCount = document.getElementById('csvCount');
+const clearCsvBtn = document.getElementById('clearCsv');
+
+console.log('CSV elements:', { csvInput, importCsvBtn, downloadTemplateBtn, csvInfo, csvCount, clearCsvBtn });
+
+let csvProdutos = [];
+let currentCsvIndex = 0;
+
+const csvNav = document.getElementById('csvNav');
+const csvPrev = document.getElementById('csvPrev');
+const csvNext = document.getElementById('csvNext');
+const csvPageInfo = document.getElementById('csvPageInfo');
+
+downloadTemplateBtn.onclick = () => {
+    const csv = 'nome,referencia,cor,tamanho,codigo_barras,qrcode,preco\nMocassim Classic,REF-001,Marrom,42,7891234567890,,189.90\nAlpargata Comfort,REF-002,Azul,38,,https://loja.com/produto,129.90';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'modelo-etiquetas.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+importCsvBtn.onclick = () => {
+    console.log('Import button clicked');
+    csvInput.click();
+};
+
+csvInput.onchange = () => {
+    console.log('CSV input changed', csvInput.files);
+    if (csvInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                console.log('File content:', e.target.result);
+                const lines = e.target.result.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                console.log('Headers:', headers);
+                const newProducts = lines.slice(1).map(line => {
+                    const values = line.split(',').map(v => v.trim());
+                    const obj = {};
+                    headers.forEach((h, i) => obj[h] = values[i] || '');
+                    return obj;
+                }).filter(p => p.nome || p.codigo_barras || p.qrcode);
+                
+                // Salvar etiqueta atual se tiver conteúdo
+                if (csvProdutos.length > 0) {
+                    saveCurrentProduct();
+                } else if (nomeProduto.value || codigoBarras.value || qrcodeContent.value) {
+                    // Salvar etiqueta manual atual
+                    csvProdutos.push({
+                        nome: nomeProduto.value,
+                        referencia: refProduto.value,
+                        cor: corProduto.value,
+                        tamanho: tamanhoProduto.value,
+                        codigo_barras: getCodigoTipo() === 'barcode' ? codigoBarras.value : '',
+                        qrcode: getCodigoTipo() === 'qrcode' ? qrcodeContent.value : '',
+                        preco: mostrarPreco.checked ? precoProduto.value : ''
+                    });
+                }
+                
+                // Adicionar novos produtos
+                csvProdutos = csvProdutos.concat(newProducts);
+                
+                console.log('Produtos:', csvProdutos);
+                csvCount.textContent = `${csvProdutos.length} produtos`;
+                csvInfo.style.display = csvProdutos.length > 0 ? 'flex' : 'none';
+                statusEl.textContent = `${newProducts.length} produtos adicionados (total: ${csvProdutos.length})`;
+                
+                // Mostrar primeiro produto adicionado
+                if (newProducts.length > 0) {
+                    currentCsvIndex = csvProdutos.length - newProducts.length;
+                    fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
+                    updateCsvNav();
+                    preview.style.display = 'flex';
+                    setInputsEnabled(true);
+                }
+            } catch (err) {
+                console.error('Erro CSV:', err);
+                statusEl.textContent = 'Erro ao ler CSV: ' + err.message;
+            }
+        };
+        reader.readAsText(csvInput.files[0]);
+    }
+};
+
+clearCsvBtn.onclick = () => {
+    csvProdutos = [];
+    currentCsvIndex = 0;
+    csvInput.value = '';
+    csvInfo.style.display = 'none';
+    csvNav.style.display = 'none';
+    statusEl.textContent = '';
+    preview.style.display = 'none';
+    setInputsEnabled(false);
+    // Limpar campos
+    nomeProduto.value = '';
+    refProduto.value = '';
+    corProduto.value = '';
+    tamanhoProduto.value = '';
+    codigoBarras.value = '';
+    qrcodeContent.value = '';
+    precoProduto.value = '';
+};
+
+// Navegação CSV
+function updateCsvNav() {
+    if (csvProdutos.length > 0) {
+        csvNav.style.display = 'flex';
+        csvPageInfo.textContent = `${currentCsvIndex + 1} / ${csvProdutos.length}`;
+        csvPrev.disabled = currentCsvIndex === 0;
+        csvNext.disabled = currentCsvIndex === csvProdutos.length - 1;
+    } else {
+        csvNav.style.display = 'none';
+    }
+}
+
+// Salvar edições do produto atual no array
+function saveCurrentProduct() {
+    if (csvProdutos.length === 0) return;
+    csvProdutos[currentCsvIndex] = {
+        nome: nomeProduto.value,
+        referencia: refProduto.value,
+        cor: corProduto.value,
+        tamanho: tamanhoProduto.value,
+        codigo_barras: getCodigoTipo() === 'barcode' ? codigoBarras.value : '',
+        qrcode: getCodigoTipo() === 'qrcode' ? qrcodeContent.value : '',
+        preco: mostrarPreco.checked ? precoProduto.value : '',
+        imagem: imagemGrayscale,
+        tipoImagem: tipoImagem
+    };
+}
+
+csvPrev.onclick = () => {
+    if (currentCsvIndex > 0) {
+        saveCurrentProduct();
+        currentCsvIndex--;
+        fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
+        updateCsvNav();
+    }
+};
+
+csvNext.onclick = () => {
+    if (currentCsvIndex < csvProdutos.length - 1) {
+        saveCurrentProduct();
+        currentCsvIndex++;
+        fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
+        updateCsvNav();
+    }
+};
+
+// Adicionar nova etiqueta
+const addLabelBtn = document.getElementById('addLabel');
+addLabelBtn.onclick = () => {
+    // Salvar etiqueta atual se existir
+    if (csvProdutos.length > 0) {
+        saveCurrentProduct();
+    }
     
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Imprimir Etiqueta</title>
-            <style>
-                @page {
-                    size: 51mm 25mm;
-                    margin: 0;
-                }
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                body {
-                    width: 51mm;
-                    height: 25mm;
-                }
-                .etiqueta-preview {
-                    width: 51mm;
-                    height: 25mm;
-                    display: flex;
-                    background: #fff;
-                    font-family: Arial, sans-serif;
-                    overflow: hidden;
-                }
-                .etiqueta-img-container {
-                    width: 18mm;
-                    height: 25mm;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 1mm;
-                }
-                .etiqueta-img-container img {
-                    max-width: 100%;
-                    max-height: 100%;
-                    object-fit: contain;
-                    filter: grayscale(100%);
-                }
-                .etiqueta-info {
-                    flex: 1;
-                    padding: 1mm;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                }
-                .etiqueta-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: baseline;
-                }
-                .etiqueta-nome {
-                    font-size: 8pt;
-                    font-weight: bold;
-                }
-                .etiqueta-tamanho {
-                    font-size: 12pt;
-                    font-weight: bold;
-                }
-                .etiqueta-cor {
-                    font-size: 7pt;
-                }
-                .etiqueta-ref {
-                    font-size: 5pt;
-                    color: #666;
-                }
-                svg {
-                    width: 100%;
-                    height: auto;
-                    max-height: 10mm;
-                }
-                .etiqueta-preco {
-                    font-size: 7pt;
-                    font-weight: bold;
-                    text-align: center;
-                }
-            </style>
-        </head>
-        <body>
-            ${preview.outerHTML}
-            <script>
-                window.onload = () => {
-                    window.print();
-                    window.close();
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
+    // Criar nova etiqueta em branco
+    const newProduct = { nome: '', referencia: '', cor: '', tamanho: '', codigo_barras: '', qrcode: '', preco: '' };
+    csvProdutos.push(newProduct);
+    currentCsvIndex = csvProdutos.length - 1;
+    fillPreviewWithProduct(newProduct);
+    updateCsvNav();
+    csvInfo.style.display = 'flex';
+    csvCount.textContent = `${csvProdutos.length} produtos`;
+    
+    // Mostrar preview
+    preview.style.display = 'flex';
+    setInputsEnabled(true);
+};
+
+// Desabilitar inputs até adicionar etiqueta
+function setInputsEnabled(enabled) {
+    const labelControls = document.getElementById('labelControls');
+    labelControls.style.display = enabled ? 'block' : 'none';
+}
+
+// Iniciar com inputs escondidos
+setInputsEnabled(false);
+
+// Função para preencher preview com dados do produto
+function fillPreviewWithProduct(produto) {
+    console.log('Filling preview with:', produto);
+    
+    // Preencher inputs
+    nomeProduto.value = produto.nome || '';
+    refProduto.value = produto.referencia || '';
+    corProduto.value = produto.cor || '';
+    tamanhoProduto.value = produto.tamanho || '';
+    
+    // Atualizar preview diretamente
+    previewNome.textContent = produto.nome || '';
+    previewCor.textContent = (produto.nome && produto.cor) ? ` - ${produto.cor}` : (produto.cor || '');
+    previewRef.textContent = produto.referencia ? `Ref: ${produto.referencia}` : '';
+    previewTamanho.textContent = produto.tamanho || '';
+    
+    // Imagem
+    if (produto.imagem) {
+        imagemGrayscale = produto.imagem;
+        tipoImagem = produto.tipoImagem || 'custom';
+        previewImg.src = imagemGrayscale;
+        imgContainer.style.display = 'flex';
+        imgOptions.forEach(o => o.classList.remove('selected'));
+        document.querySelector(`[data-type="${tipoImagem}"]`).classList.add('selected');
+    } else {
+        imagemGrayscale = null;
+        tipoImagem = 'custom';
+        imgContainer.style.display = 'none';
+        imgOptions.forEach(o => o.classList.remove('selected'));
+        document.querySelector('[data-type="custom"]').classList.add('selected');
+    }
+    
+    // Código de barras ou QR code
+    if (produto.codigo_barras) {
+        document.querySelector('input[name="codigoTipo"][value="barcode"]').checked = true;
+        codigoBarras.value = produto.codigo_barras;
+        barcodeContainer.style.display = 'block';
+        qrcodeContainer.style.display = 'none';
+        previewBarcode.style.display = 'block';
+        previewQrcode.style.display = 'none';
+        previewQrcode.innerHTML = '';
+        try {
+            JsBarcode(previewBarcode, produto.codigo_barras, {
+                format: 'EAN13', width: 2, height: 35, displayValue: true, fontSize: 12, margin: 0
+            });
+        } catch {
+            JsBarcode(previewBarcode, produto.codigo_barras, {
+                format: 'CODE128', width: 1.5, height: 35, displayValue: true, fontSize: 12, margin: 0
+            });
+        }
+    } else if (produto.qrcode) {
+        document.querySelector('input[name="codigoTipo"][value="qrcode"]').checked = true;
+        qrcodeContent.value = produto.qrcode;
+        barcodeContainer.style.display = 'none';
+        qrcodeContainer.style.display = 'block';
+        previewBarcode.style.display = 'none';
+        previewQrcode.style.display = 'block';
+        previewQrcode.innerHTML = '';
+        new QRCode(previewQrcode, {
+            text: produto.qrcode,
+            width: 65,
+            height: 65,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    } else {
+        document.querySelector('input[name="codigoTipo"][value="none"]').checked = true;
+        codigoBarras.value = '';
+        qrcodeContent.value = '';
+        barcodeContainer.style.display = 'none';
+        qrcodeContainer.style.display = 'none';
+        previewBarcode.style.display = 'none';
+        previewQrcode.style.display = 'none';
+        previewQrcode.innerHTML = '';
+    }
+    
+    // Preço
+    if (produto.preco) {
+        mostrarPreco.checked = true;
+        precoProduto.value = produto.preco;
+        previewPreco.textContent = `R$ ${produto.preco}`;
+        previewPreco.style.display = 'block';
+        precoContainer.style.display = 'block';
+    } else {
+        mostrarPreco.checked = false;
+        precoProduto.value = '';
+        previewPreco.style.display = 'none';
+        precoContainer.style.display = 'none';
+    }
+}
+
+// Gerar PDF (único ou lote)
+gerarBtn.onclick = async () => {
+    if (csvProdutos.length === 0) {
+        // Gerar etiqueta única
+        try {
+            statusEl.textContent = 'Gerando PDF...';
+            gerarBtn.disabled = true;
+
+            const pdfBytes = await gerarPdfBytes();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'etiqueta-produto.pdf';
+            a.click();
+
+            URL.revokeObjectURL(url);
+            statusEl.textContent = 'PDF gerado!';
+            gerarBtn.disabled = false;
+        } catch (e) {
+            statusEl.textContent = 'Erro: ' + e.message;
+            gerarBtn.disabled = false;
+        }
+    } else {
+        // Gerar lote
+        try {
+            statusEl.textContent = 'Gerando PDF em lote...';
+            gerarBtn.disabled = true;
+
+            const pdfDoc = await PDFLib.PDFDocument.create();
+            const mmToPt = 2.83465;
+            const pdfWidth = 51 * mmToPt;
+            const pdfHeight = 25 * mmToPt;
+
+            // Salvar produto atual antes de iterar
+            saveCurrentProduct();
+            const savedIndex = currentCsvIndex;
+
+            for (let i = 0; i < csvProdutos.length; i++) {
+                statusEl.textContent = `Gerando ${i + 1}/${csvProdutos.length}...`;
+                
+                fillPreviewWithProduct(csvProdutos[i]);
+                
+                // Aguardar renderização (mais tempo para QR code)
+                await new Promise(r => setTimeout(r, 300));
+                
+                const pdfBytes = await gerarPdfBytes();
+                const tempDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                const [page] = await pdfDoc.copyPages(tempDoc, [0]);
+                pdfDoc.addPage(page);
+            }
+
+            // Restaurar etiqueta atual
+            currentCsvIndex = savedIndex;
+            fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
+            updateCsvNav();
+
+            const finalPdfBytes = await pdfDoc.save();
+            const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'etiquetas-lote.pdf';
+            a.click();
+
+            URL.revokeObjectURL(url);
+            statusEl.textContent = `PDF gerado com ${csvProdutos.length} etiquetas!`;
+            gerarBtn.disabled = false;
+        } catch (e) {
+            statusEl.textContent = 'Erro: ' + e.message;
+            gerarBtn.disabled = false;
+            console.error(e);
+        }
+    }
 };

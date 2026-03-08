@@ -6,7 +6,10 @@
     <title>Etiqueta de Produto - Gerador de Etiquetas</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="js/global.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6461956943917786" crossorigin="anonymous"></script>
 </head>
 <body>
     <nav class="breadcrumb">
@@ -17,76 +20,123 @@
     <div class="container">
         <div class="layout-split">
             <div class="controls">
-                <label>Imagem do Produto</label>
-                <div class="img-selector">
-                    <div class="img-option selected" data-type="custom">
-                        <div class="img-option-icon">📤</div>
-                        <span>Enviar</span>
+                <div id="labelControls" style="display: none;">
+                    <label>Imagem do Produto</label>
+                    <div class="img-selector">
+                        <div class="img-option selected" data-type="custom">
+                            <div class="img-option-icon">📤</div>
+                            <span>Enviar</span>
+                        </div>
+                        <div class="img-option" data-type="mocassim">
+                            <img src="" alt="Mocassim" id="imgMocassim">
+                            <span>Mocassim</span>
+                        </div>
+                        <div class="img-option" data-type="alpargata">
+                            <img src="" alt="Alpargata" id="imgAlpargata">
+                            <span>Alpargata</span>
+                        </div>
                     </div>
-                    <div class="img-option" data-type="mocassim">
-                        <img src="" alt="Mocassim" id="imgMocassim">
-                        <span>Mocassim</span>
+                    
+                    <input type="file" id="imgInput" accept="image/*" style="display: none;">
+
+                    <label>Nome do Produto</label>
+                    <input type="text" id="nomeProduto" maxlength="25">
+
+                    <label>Referência</label>
+                    <input type="text" id="refProduto" maxlength="15">
+
+                    <div class="row-inputs">
+                        <div class="input-group">
+                            <label>Cor</label>
+                            <input type="text" id="corProduto" maxlength="12">
+                        </div>
+                        <div class="input-group">
+                            <label>Tamanho</label>
+                            <input type="text" id="tamanhoProduto" maxlength="6">
+                        </div>
                     </div>
-                    <div class="img-option" data-type="alpargata">
-                        <img src="" alt="Alpargata" id="imgAlpargata">
-                        <span>Alpargata</span>
+
+                    <div class="options">
+                        <label class="radio-label">
+                            <input type="radio" name="codigoTipo" value="none">
+                            <span>Sem código</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="codigoTipo" value="barcode" checked>
+                            <span>Código de barras</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="codigoTipo" value="qrcode">
+                            <span>QR Code</span>
+                        </label>
+                    </div>
+
+                    <div id="barcodeContainer">
+                        <label>Código de Barras</label>
+                        <input type="text" id="codigoBarras" maxlength="13">
+                    </div>
+
+                    <div id="qrcodeContainer" style="display: none;">
+                        <label>Conteúdo do QR Code</label>
+                        <input type="text" id="qrcodeContent">
+                    </div>
+
+                    <div class="toggle-row">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="mostrarPreco">
+                            <span>Mostrar preço</span>
+                        </label>
+                    </div>
+
+                    <div id="precoContainer" style="display: none;">
+                        <label>Preço</label>
+                        <input type="text" id="precoProduto">
                     </div>
                 </div>
-                
-                <input type="file" id="imgInput" accept="image/*" style="display: none;">
 
-                <label>Nome do Produto</label>
-                <input type="text" id="nomeProduto" maxlength="25">
-
-                <label>Referência</label>
-                <input type="text" id="refProduto" maxlength="15">
-
-                <div class="row-inputs">
-                    <div class="input-group">
-                        <label>Cor</label>
-                        <input type="text" id="corProduto" maxlength="12">
+                <div class="csv-section">
+                    <label>Importar CSV (lote)</label>
+                    <div class="csv-actions">
+                        <button type="button" id="downloadTemplate" class="btn-secondary">📥 Baixar modelo</button>
+                        <button type="button" id="importCsv" class="btn-secondary">📤 Importar CSV</button>
+                        <input type="file" id="csvInput" accept=".csv" style="display: none;">
                     </div>
-                    <div class="input-group">
-                        <label>Tamanho</label>
-                        <input type="text" id="tamanhoProduto" maxlength="6">
+                    <div id="csvInfo" style="display: none;">
+                        <span id="csvCount">0 produtos</span>
+                        <button type="button" id="clearCsv" class="btn-link">Limpar</button>
                     </div>
-                </div>
-
-                <label>Código de Barras</label>
-                <input type="text" id="codigoBarras" maxlength="13">
-
-                <div class="toggle-row">
-                    <label class="toggle-label">
-                        <input type="checkbox" id="mostrarPreco">
-                        <span>Mostrar preço</span>
-                    </label>
-                </div>
-
-                <div id="precoContainer" style="display: none;">
-                    <label>Preço</label>
-                    <input type="text" id="precoProduto">
                 </div>
             </div>
 
             <div class="preview-side">
                 <label>Preview (51mm x 25mm)</label>
                 <div class="preview-container">
-                    <div class="etiqueta-preview" id="preview">
-                        <div class="etiqueta-img-container">
+                    <div class="etiqueta-preview" id="preview" style="display: none;">
+                        <div class="etiqueta-img-container" id="imgContainer" style="display: none;">
                             <img id="previewImg" src="" alt="">
+                            <div class="etiqueta-preco" id="previewPreco" style="display: none;">R$ 0,00</div>
                         </div>
                         <div class="etiqueta-info">
                             <div class="etiqueta-header">
-                                <div class="etiqueta-nome" id="previewNome">Nome</div>
-                                <div class="etiqueta-tamanho" id="previewTamanho">-</div>
+                                <div class="etiqueta-nome-cor"><span id="previewNome"></span><span id="previewCor"></span></div>
+                                <div class="etiqueta-tamanho" id="previewTamanho"></div>
                             </div>
-                            <div class="etiqueta-cor" id="previewCor">-</div>
-                            <div class="etiqueta-ref" id="previewRef">Ref: -</div>
+                            <div class="etiqueta-ref" id="previewRef"></div>
                             <svg id="previewBarcode"></svg>
-                            <div class="etiqueta-preco" id="previewPreco" style="display: none;">R$ 0,00</div>
+                            <div class="etiqueta-bottom">
+                                <div id="previewQrcode" style="display: none;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="csv-nav" id="csvNav" style="display: none;">
+                    <button type="button" id="csvPrev">←</button>
+                    <span id="csvPageInfo">1 / 1</span>
+                    <button type="button" id="csvNext">→</button>
+                </div>
+                
+                <button type="button" id="addLabel" class="btn-add">+ Adicionar etiqueta</button>
 
                 <div class="btn-row">
                     <button id="imprimirBtn" class="hide-mobile">🖨️ Imprimir</button>
@@ -97,7 +147,16 @@
         </div>
     </div>
 
+    <!-- Modal de Zoom -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content modal-simple">
+            <button class="modal-close" id="modalClose">✕</button>
+            <div class="modal-preview-container" id="modalPreviewContainer"></div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="js/product-icons.js"></script>
     <script src="js/product-label.js"></script>
 </body>

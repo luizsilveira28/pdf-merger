@@ -1,8 +1,45 @@
-// Etiqueta de Agradecimento - PDF 50mm x 25mm
-const { PDFDocument, rgb } = PDFLib;
+// Etiqueta de Agradecimento
+const { PDFDocument } = PDFLib;
 
 let selectedIndex = 0;
 let customImage = null;
+let etiquetas = [];
+let currentIndex = 0;
+
+const labelPreview = document.getElementById('labelPreview');
+const previewIcon = document.getElementById('previewIcon');
+const previewText = document.getElementById('previewText');
+const thankYouText = document.getElementById('thankYouText');
+const labelControls = document.getElementById('labelControls');
+const labelNav = document.getElementById('labelNav');
+const labelPrev = document.getElementById('labelPrev');
+const labelNext = document.getElementById('labelNext');
+const labelPageInfo = document.getElementById('labelPageInfo');
+
+// Converter para grayscale
+function toGrayscale(base64) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = base64;
+    });
+}
 
 function renderIconSelector() {
     const selector = document.getElementById('iconSelector');
@@ -12,7 +49,7 @@ function renderIconSelector() {
         const label = document.createElement('label');
         label.className = 'icon-option' + (i === 0 ? ' selected' : '');
         label.dataset.index = i;
-        label.innerHTML = '<img src="' + icon.data + '" alt="' + icon.name + '" width="60"><span>' + icon.name + '</span>';
+        label.innerHTML = `<img src="${icon.data}" alt="${icon.name}" width="60"><span>${icon.name}</span>`;
         label.addEventListener('click', () => selectIcon(i, label));
         selector.appendChild(label);
     });
@@ -24,7 +61,6 @@ function renderIconSelector() {
     
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.id = 'customIconInput';
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
     fileInput.addEventListener('change', handleCustomUpload);
@@ -32,10 +68,9 @@ function renderIconSelector() {
     
     customLabel.addEventListener('click', () => fileInput.click());
     selector.appendChild(customLabel);
-    updatePreview();
 }
 
-function selectIcon(index, element) {
+async function selectIcon(index, element) {
     document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
     element.classList.add('selected');
     selectedIndex = index;
@@ -43,14 +78,15 @@ function selectIcon(index, element) {
     updatePreview();
 }
 
-function handleCustomUpload(e) {
+async function handleCustomUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-        customImage = event.target.result;
+    reader.onload = async (event) => {
+        const grayscale = await toGrayscale(event.target.result);
+        customImage = grayscale;
         selectedIndex = -1;
-        document.querySelector('.custom-icon-placeholder').innerHTML = '<img src="' + customImage + '" style="width:100%;height:100%;object-fit:contain;">';
+        document.querySelector('.custom-icon-placeholder').innerHTML = `<img src="${grayscale}" style="width:100%;height:100%;object-fit:contain;">`;
         document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
         document.querySelector('[data-index="custom"]').classList.add('selected');
         updatePreview();
@@ -58,29 +94,126 @@ function handleCustomUpload(e) {
     reader.readAsDataURL(file);
 }
 
-document.getElementById('thankYouText').addEventListener('input', updatePreview);
-
-function updatePreview() {
-    const text = document.getElementById('thankYouText').value || 'Obrigado!';
-    const imgSrc = customImage || (selectedIndex >= 0 ? ICON_DATA[selectedIndex].data : null);
-    if (imgSrc) document.getElementById('previewIcon').innerHTML = '<img src="' + imgSrc + '" style="max-width:80px;max-height:60px;">';
-    document.getElementById('previewText').textContent = text;
+async function updatePreview() {
+    const text = thankYouText.value || '';
+    let imgSrc = null;
+    
+    if (customImage) {
+        imgSrc = customImage; // já está em grayscale
+    } else if (selectedIndex >= 0 && ICON_DATA[selectedIndex]) {
+        imgSrc = await toGrayscale(ICON_DATA[selectedIndex].data);
+    }
+    
+    if (imgSrc) {
+        previewIcon.innerHTML = `<img src="${imgSrc}" style="max-width:80px;max-height:60px;">`;
+    } else {
+        previewIcon.innerHTML = '';
+    }
+    previewText.innerText = text;
 }
 
-document.getElementById('downloadLabelBtn').addEventListener('click', async () => {
-    const label = document.getElementById('labelPreview');
+thankYouText.addEventListener('input', updatePreview);
+
+// Template buttons
+document.querySelectorAll('.template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        thankYouText.value = btn.dataset.text;
+        updatePreview();
+    });
+});
+
+// Salvar etiqueta atual
+function saveCurrentLabel() {
+    if (etiquetas.length === 0) return;
+    etiquetas[currentIndex] = {
+        text: thankYouText.value,
+        iconIndex: selectedIndex,
+        customImage: customImage
+    };
+}
+
+// Preencher preview
+async function fillPreviewWithLabel(etiqueta) {
+    thankYouText.value = etiqueta.text || '';
+    selectedIndex = etiqueta.iconIndex !== undefined ? etiqueta.iconIndex : -1;
+    customImage = etiqueta.customImage || null;
     
-    // Remover borda temporariamente
-    const originalBorder = label.style.border;
-    label.style.border = 'none';
+    document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
     
-    // Capturar preview como imagem usando html2canvas
-    const canvas = await html2canvas(label, { scale: 4, backgroundColor: '#ffffff' });
+    let imgSrc = null;
+    if (customImage) {
+        document.querySelector('[data-index="custom"]').classList.add('selected');
+        document.querySelector('.custom-icon-placeholder').innerHTML = `<img src="${customImage}" style="width:100%;height:100%;object-fit:contain;">`;
+        imgSrc = customImage;
+    } else if (selectedIndex >= 0 && ICON_DATA[selectedIndex]) {
+        const opt = document.querySelector(`[data-index="${selectedIndex}"]`);
+        if (opt) opt.classList.add('selected');
+        imgSrc = await toGrayscale(ICON_DATA[selectedIndex].data);
+    }
     
-    // Restaurar borda
-    label.style.border = originalBorder;
+    if (imgSrc) {
+        previewIcon.innerHTML = `<img src="${imgSrc}" style="max-width:80px;max-height:60px;">`;
+    } else {
+        previewIcon.innerHTML = '';
+    }
     
-    // PDF 51mm x 25mm (paisagem) - tamanho real da etiqueta
+    previewText.innerText = etiqueta.text || '';
+}
+
+function updateNav() {
+    if (etiquetas.length > 0) {
+        labelNav.style.display = 'flex';
+        labelPageInfo.textContent = `${currentIndex + 1} / ${etiquetas.length}`;
+        labelPrev.disabled = currentIndex === 0;
+        labelNext.disabled = currentIndex === etiquetas.length - 1;
+    } else {
+        labelNav.style.display = 'none';
+    }
+}
+
+labelPrev.onclick = () => {
+    if (currentIndex > 0) {
+        saveCurrentLabel();
+        currentIndex--;
+        fillPreviewWithLabel(etiquetas[currentIndex]);
+        updateNav();
+    }
+};
+
+labelNext.onclick = () => {
+    if (currentIndex < etiquetas.length - 1) {
+        saveCurrentLabel();
+        currentIndex++;
+        fillPreviewWithLabel(etiquetas[currentIndex]);
+        updateNav();
+    }
+};
+
+// Adicionar nova etiqueta
+document.getElementById('addLabel').onclick = () => {
+    if (etiquetas.length > 0) {
+        saveCurrentLabel();
+    }
+    
+    // Etiqueta em branco (sem ícone, sem texto)
+    const newLabel = { text: '', iconIndex: -1, customImage: null };
+    etiquetas.push(newLabel);
+    currentIndex = etiquetas.length - 1;
+    fillPreviewWithLabel(newLabel);
+    updateNav();
+    
+    labelControls.style.display = 'block';
+    labelPreview.style.display = 'flex';
+};
+
+async function gerarPdfBytes() {
+    const originalBorder = labelPreview.style.border;
+    labelPreview.style.border = 'none';
+    
+    const canvas = await html2canvas(labelPreview, { scale: 4, backgroundColor: '#ffffff' });
+    
+    labelPreview.style.border = originalBorder;
+    
     const mmToPt = 2.83465;
     const pdfWidth = 51 * mmToPt;
     const pdfHeight = 25 * mmToPt;
@@ -94,80 +227,109 @@ document.getElementById('downloadLabelBtn').addEventListener('click', async () =
     
     page.drawImage(pdfImage, { x: 0, y: 0, width: pdfWidth, height: pdfHeight });
     
-    const blob = new Blob([await pdfDoc.save()], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'etiqueta-agradecimento.pdf';
-    link.click();
-});
+    return await pdfDoc.save();
+}
 
-document.getElementById('imprimirBtn').addEventListener('click', () => {
-    const label = document.getElementById('labelPreview');
+document.getElementById('downloadLabelBtn').onclick = async () => {
+    if (etiquetas.length <= 1) {
+        const pdfBytes = await gerarPdfBytes();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'etiqueta-agradecimento.pdf';
+        link.click();
+    } else {
+        saveCurrentLabel();
+        const savedIndex = currentIndex;
+        const pdfDoc = await PDFDocument.create();
+        
+        for (let i = 0; i < etiquetas.length; i++) {
+            fillPreviewWithLabel(etiquetas[i]);
+            await new Promise(r => setTimeout(r, 200));
+            const pageBytes = await gerarPdfBytes();
+            const tempDoc = await PDFDocument.load(pageBytes);
+            const [page] = await pdfDoc.copyPages(tempDoc, [0]);
+            pdfDoc.addPage(page);
+        }
+        
+        currentIndex = savedIndex;
+        fillPreviewWithLabel(etiquetas[currentIndex]);
+        updateNav();
+        
+        const blob = new Blob([await pdfDoc.save()], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'etiquetas-agradecimento.pdf';
+        link.click();
+    }
+};
+
+document.getElementById('imprimirBtn').onclick = async () => {
+    let pdfBytes;
     
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Imprimir Etiqueta</title>
-            <style>
-                @page {
-                    size: 51mm 25mm;
-                    margin: 0;
-                }
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                body {
-                    width: 51mm;
-                    height: 25mm;
-                }
-                .thank-you-label {
-                    background: white;
-                    width: 51mm;
-                    height: 25mm;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    overflow: hidden;
-                }
-                .label-icon {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding-top: 2mm;
-                }
-                .label-icon img {
-                    max-width: 15mm;
-                    max-height: 12mm;
-                    object-fit: contain;
-                }
-                .label-text {
-                    font-family: Arial, sans-serif;
-                    font-size: 8pt;
-                    font-weight: 600;
-                    color: #333;
-                    padding: 1mm;
-                    text-align: center;
-                }
-            </style>
-        </head>
-        <body>
-            ${label.outerHTML}
-            <script>
-                window.onload = () => {
-                    window.print();
-                    window.close();
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
+    if (etiquetas.length <= 1) {
+        pdfBytes = await gerarPdfBytes();
+    } else {
+        saveCurrentLabel();
+        const savedIndex = currentIndex;
+        const pdfDoc = await PDFDocument.create();
+        
+        for (let i = 0; i < etiquetas.length; i++) {
+            fillPreviewWithLabel(etiquetas[i]);
+            await new Promise(r => setTimeout(r, 200));
+            const pageBytes = await gerarPdfBytes();
+            const tempDoc = await PDFDocument.load(pageBytes);
+            const [page] = await pdfDoc.copyPages(tempDoc, [0]);
+            pdfDoc.addPage(page);
+        }
+        
+        currentIndex = savedIndex;
+        fillPreviewWithLabel(etiquetas[currentIndex]);
+        updateNav();
+        
+        pdfBytes = await pdfDoc.save();
+    }
+    
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, '_blank');
+    printWindow.onload = () => printWindow.print();
+};
+
+// Modal de Zoom
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const modalPreviewContainer = document.getElementById('modalPreviewContainer');
+
+labelPreview.style.cursor = 'pointer';
+labelPreview.onclick = () => {
+    modalPreviewContainer.innerHTML = '';
+    const clone = labelPreview.cloneNode(true);
+    clone.style.border = '2px dashed #ddd';
+    modalPreviewContainer.appendChild(clone);
+    modalOverlay.classList.add('active');
+};
+
+modalClose.onclick = () => modalOverlay.classList.remove('active');
+modalOverlay.onclick = (e) => {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+};
+
+// Atalhos de teclado
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+        modalOverlay.classList.remove('active');
+    }
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'p') {
+            e.preventDefault();
+            document.getElementById('imprimirBtn').click();
+        } else if (e.key === 's') {
+            e.preventDefault();
+            document.getElementById('downloadLabelBtn').click();
+        }
+    }
 });
 
+// Inicialização
 renderIconSelector();
