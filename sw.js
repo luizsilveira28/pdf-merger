@@ -1,5 +1,6 @@
-const CACHE_NAME = 'etiquetas-v2';
-const urlsToCache = [
+const CACHE_NAME = 'etiquetas-cache';
+
+const PRECACHE_URLS = [
     '/',
     '/index.html',
     '/etiquetas.html',
@@ -19,50 +20,35 @@ const urlsToCache = [
     '/manifest.json'
 ];
 
-// Instalar service worker
+// Instalar: pré-cacheia arquivos essenciais
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(urlsToCache))
+            .then((cache) => cache.addAll(PRECACHE_URLS))
+            .then(() => self.skipWaiting())
     );
 });
 
-// Buscar do cache, fallback para rede
+// Ativar: toma controle imediato
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
+// Network-first: sempre busca da rede, cache só para offline
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request)
+        fetch(event.request)
             .then((response) => {
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request).then((response) => {
-                    // Não cachear se não for uma resposta válida
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    // Cachear a nova resposta
+                if (response && response.status === 200 && response.type === 'basic') {
                     const responseToCache = response.clone();
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    return response;
-                });
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
+                return response;
             })
-    );
-});
-
-// Limpar caches antigos
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+            .catch(() => {
+                return caches.match(event.request);
+            })
     );
 });
