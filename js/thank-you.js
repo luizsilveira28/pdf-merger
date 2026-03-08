@@ -192,9 +192,93 @@ function updateNav() {
         labelPageInfo.textContent = `${currentIndex + 1} / ${etiquetas.length}`;
         labelPrev.disabled = currentIndex === 0;
         labelNext.disabled = currentIndex === etiquetas.length - 1;
+        updateLabelList();
     } else {
         labelNav.style.display = 'none';
+        updateLabelList();
     }
+}
+
+// Lista de etiquetas com opção de remover
+function updateLabelList() {
+    let listContainer = document.getElementById('labelListContainer');
+    if (!listContainer) {
+        listContainer = document.createElement('div');
+        listContainer.id = 'labelListContainer';
+        listContainer.className = 'pdf-list';
+        listContainer.style.display = 'none';
+        listContainer.innerHTML = `
+            <div class="pdf-list-header">
+                <span id="labelCount">0 etiquetas</span>
+                <button type="button" class="btn-link" id="clearAllLabels">Limpar todas</button>
+            </div>
+            <ul id="labelItems"></ul>
+        `;
+        // Inserir antes do preview-side ou no início dos controls
+        const controls = document.querySelector('.controls');
+        const csvSection = controls.querySelector('.csv-section') || controls.querySelector('#labelControls');
+        if (csvSection) {
+            csvSection.parentNode.insertBefore(listContainer, csvSection.nextSibling);
+        } else {
+            controls.appendChild(listContainer);
+        }
+        
+        document.getElementById('clearAllLabels').onclick = () => {
+            etiquetas = [];
+            currentIndex = 0;
+            updateNav();
+            labelPreview.style.display = 'none';
+            labelControls.style.display = 'none';
+        };
+    }
+    
+    const labelItems = document.getElementById('labelItems');
+    const labelCount = document.getElementById('labelCount');
+    
+    if (etiquetas.length === 0) {
+        listContainer.style.display = 'none';
+        return;
+    }
+    
+    listContainer.style.display = 'block';
+    labelCount.textContent = `${etiquetas.length} etiqueta${etiquetas.length !== 1 ? 's' : ''}`;
+    
+    labelItems.innerHTML = '';
+    etiquetas.forEach((etiqueta, index) => {
+        const li = document.createElement('li');
+        const nome = etiqueta.text || `Etiqueta ${index + 1}`;
+        li.innerHTML = `
+            <span title="${nome}">🏷️ ${nome.substring(0, 25)}${nome.length > 25 ? '...' : ''}</span>
+            <button type="button" data-index="${index}">✕</button>
+        `;
+        labelItems.appendChild(li);
+    });
+    
+    // Event listener para remover
+    labelItems.querySelectorAll('button').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            removeLabel(index);
+        };
+    });
+}
+
+function removeLabel(index) {
+    etiquetas.splice(index, 1);
+    
+    if (etiquetas.length === 0) {
+        currentIndex = 0;
+        labelPreview.style.display = 'none';
+        labelControls.style.display = 'none';
+    } else {
+        if (currentIndex >= etiquetas.length) {
+            currentIndex = etiquetas.length - 1;
+        }
+        fillPreviewWithLabel(etiquetas[currentIndex]);
+    }
+    
+    updateNav();
 }
 
 labelPrev.onclick = () => {

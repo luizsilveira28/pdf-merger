@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Etiqueta de Produto - Gerador de Etiquetas</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <meta name="theme-color" content="#FF6B35">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/global.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -93,19 +97,6 @@
                         <input type="text" id="precoProduto">
                     </div>
                 </div>
-
-                <div class="csv-section">
-                    <label>Importar CSV (lote)</label>
-                    <div class="csv-actions">
-                        <button type="button" id="downloadTemplate" class="btn-secondary">📥 Baixar modelo</button>
-                        <button type="button" id="importCsv" class="btn-secondary">📤 Importar CSV</button>
-                        <input type="file" id="csvInput" accept=".csv" style="display: none;">
-                    </div>
-                    <div id="csvInfo" style="display: none;">
-                        <span id="csvCount">0 produtos</span>
-                        <button type="button" id="clearCsv" class="btn-link">Limpar</button>
-                    </div>
-                </div>
             </div>
 
             <div class="preview-side">
@@ -143,6 +134,19 @@
                     <button id="gerarBtn" aria-label="Gerar PDF das etiquetas">📄 Gerar PDF</button>
                 </div>
                 <p class="status" id="status" role="status" aria-live="polite"></p>
+                
+                <div class="csv-section">
+                    <label>Importar CSV (lote)</label>
+                    <div class="csv-actions">
+                        <button type="button" id="downloadTemplate" class="btn-secondary">📥 Baixar modelo</button>
+                        <button type="button" id="importCsv" class="btn-secondary">📤 Importar CSV</button>
+                        <input type="file" id="csvInput" accept=".csv" style="display: none;">
+                    </div>
+                    <div id="csvInfo" style="display: none;">
+                        <span id="csvCount">0 produtos</span>
+                        <button type="button" id="clearCsv" class="btn-link">Limpar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

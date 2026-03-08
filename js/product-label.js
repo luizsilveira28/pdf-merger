@@ -399,8 +399,6 @@ csvInput.onchange = () => {
                 csvProdutos = csvProdutos.concat(validProducts);
                 
                 console.log('Produtos:', csvProdutos);
-                csvCount.textContent = `${csvProdutos.length} produtos`;
-                csvInfo.style.display = csvProdutos.length > 0 ? 'flex' : 'none';
                 showStatus(statusEl, `${validProducts.length} produtos importados (total: ${csvProdutos.length})`, 'success');
                 
                 // Mostrar primeiro produto adicionado
@@ -449,9 +447,103 @@ function updateCsvNav() {
         csvPageInfo.textContent = `${currentCsvIndex + 1} / ${csvProdutos.length}`;
         csvPrev.disabled = currentCsvIndex === 0;
         csvNext.disabled = currentCsvIndex === csvProdutos.length - 1;
+        updateProductList();
     } else {
         csvNav.style.display = 'none';
+        updateProductList();
     }
+}
+
+// Lista de produtos com opção de remover
+function updateProductList() {
+    let listContainer = document.getElementById('productListContainer');
+    if (!listContainer) {
+        listContainer = document.createElement('div');
+        listContainer.id = 'productListContainer';
+        listContainer.className = 'pdf-list';
+        listContainer.style.display = 'none';
+        listContainer.innerHTML = `
+            <div class="pdf-list-header">
+                <span id="productCount">0 produtos</span>
+                <button type="button" class="btn-link" id="clearAllProducts">Limpar todos</button>
+            </div>
+            <ul id="productItems"></ul>
+        `;
+        // Inserir após o csv-section
+        const csvSection = document.querySelector('.csv-section');
+        if (csvSection) {
+            csvSection.parentNode.insertBefore(listContainer, csvSection.nextSibling);
+        }
+        
+        document.getElementById('clearAllProducts').onclick = () => {
+            csvProdutos = [];
+            currentCsvIndex = 0;
+            csvInput.value = '';
+            csvInfo.style.display = 'none';
+            updateCsvNav();
+            preview.style.display = 'none';
+            setInputsEnabled(false);
+            nomeProduto.value = '';
+            refProduto.value = '';
+            corProduto.value = '';
+            tamanhoProduto.value = '';
+            codigoBarras.value = '';
+            qrcodeContent.value = '';
+            precoProduto.value = '';
+        };
+    }
+    
+    const productItems = document.getElementById('productItems');
+    const productCount = document.getElementById('productCount');
+    
+    if (csvProdutos.length === 0) {
+        listContainer.style.display = 'none';
+        return;
+    }
+    
+    listContainer.style.display = 'block';
+    productCount.textContent = `${csvProdutos.length} produto${csvProdutos.length !== 1 ? 's' : ''}`;
+    
+    productItems.innerHTML = '';
+    csvProdutos.forEach((produto, index) => {
+        const li = document.createElement('li');
+        const nome = produto.nome || `Produto ${index + 1}`;
+        li.innerHTML = `
+            <span title="${nome}">📦 ${nome.substring(0, 25)}${nome.length > 25 ? '...' : ''}</span>
+            <button type="button" data-index="${index}">✕</button>
+        `;
+        productItems.appendChild(li);
+    });
+    
+    // Event listener para remover
+    productItems.querySelectorAll('button').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            removeProduct(index);
+        };
+    });
+}
+
+function removeProduct(index) {
+    csvProdutos.splice(index, 1);
+    
+    if (csvProdutos.length === 0) {
+        currentCsvIndex = 0;
+        csvInput.value = '';
+        csvInfo.style.display = 'none';
+        preview.style.display = 'none';
+        setInputsEnabled(false);
+    } else {
+        if (currentCsvIndex >= csvProdutos.length) {
+            currentCsvIndex = csvProdutos.length - 1;
+        }
+        fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
+    }
+    
+    csvCount.textContent = `${csvProdutos.length} produtos`;
+    
+    updateCsvNav();
 }
 
 // Salvar edições do produto atual no array
@@ -502,8 +594,6 @@ addLabelBtn.onclick = () => {
     currentCsvIndex = csvProdutos.length - 1;
     fillPreviewWithProduct(newProduct);
     updateCsvNav();
-    csvInfo.style.display = 'flex';
-    csvCount.textContent = `${csvProdutos.length} produtos`;
     
     // Mostrar preview
     preview.style.display = 'flex';
