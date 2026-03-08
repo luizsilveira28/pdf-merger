@@ -1,3 +1,4 @@
+// Versão: 2026-03-08 - Network-first strategy
 const CACHE_NAME = 'etiquetas-cache';
 
 const PRECACHE_URLS = [
@@ -29,9 +30,24 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Ativar: toma controle imediato
+// Ativar: limpa caches antigos e toma controle
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((name) => {
+                    // Deleta qualquer cache que não seja o atual
+                    if (name !== CACHE_NAME) {
+                        return caches.delete(name);
+                    }
+                })
+            );
+        })
+        .then(() => caches.delete(CACHE_NAME)) // Limpa o cache atual também para forçar refresh
+        .then(() => caches.open(CACHE_NAME))
+        .then((cache) => cache.addAll(PRECACHE_URLS))
+        .then(() => self.clients.claim())
+    );
 });
 
 // Network-first: sempre busca da rede, cache só para offline
