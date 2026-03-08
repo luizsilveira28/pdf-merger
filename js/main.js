@@ -20,6 +20,9 @@ processBtn.onclick = async () => {
         if (format === 'thermal') {
             pdfBytes = await processThermal(srcDoc);
             filename = 'etiqueta_100x150.pdf';
+        } else if (format === 'single') {
+            pdfBytes = await processSingle(srcDoc);
+            filename = 'etiqueta_unica.pdf';
         } else {
             pdfBytes = await processA4(srcDoc);
             filename = 'etiqueta_a4.pdf';
