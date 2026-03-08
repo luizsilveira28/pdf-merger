@@ -413,3 +413,15 @@ input[type="text"]:focus {
     color: #000;
     align-self: center;
 }
+
+
+/* Botões lado a lado */
+.btn-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.btn-row button {
+    flex: 1;
+}

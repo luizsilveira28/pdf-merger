@@ -234,3 +234,109 @@ gerarBtn.onclick = async () => {
 };
 
 codigoBarras.dispatchEvent(new Event('input'));
+
+// Imprimir direto
+const imprimirBtn = document.getElementById('imprimirBtn');
+imprimirBtn.onclick = () => {
+    if (!imagemBase64) {
+        status.textContent = 'Selecione uma imagem!';
+        return;
+    }
+
+    // Criar janela de impressão com a etiqueta
+    const printWindow = window.open('', '_blank');
+    const preview = document.getElementById('preview');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Imprimir Etiqueta</title>
+            <style>
+                @page {
+                    size: 51mm 25mm;
+                    margin: 0;
+                }
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    width: 51mm;
+                    height: 25mm;
+                }
+                .etiqueta-preview {
+                    width: 51mm;
+                    height: 25mm;
+                    display: flex;
+                    background: #fff;
+                    font-family: Arial, sans-serif;
+                    overflow: hidden;
+                }
+                .etiqueta-img-container {
+                    width: 18mm;
+                    height: 25mm;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1mm;
+                }
+                .etiqueta-img-container img {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                    filter: grayscale(100%);
+                }
+                .etiqueta-info {
+                    flex: 1;
+                    padding: 1mm;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+                .etiqueta-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: baseline;
+                }
+                .etiqueta-nome {
+                    font-size: 8pt;
+                    font-weight: bold;
+                }
+                .etiqueta-tamanho {
+                    font-size: 12pt;
+                    font-weight: bold;
+                }
+                .etiqueta-cor {
+                    font-size: 7pt;
+                }
+                .etiqueta-ref {
+                    font-size: 5pt;
+                    color: #666;
+                }
+                svg {
+                    width: 100%;
+                    height: auto;
+                    max-height: 10mm;
+                }
+                .etiqueta-preco {
+                    font-size: 7pt;
+                    font-weight: bold;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            ${preview.outerHTML}
+            <script>
+                window.onload = () => {
+                    window.print();
+                    window.close();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
