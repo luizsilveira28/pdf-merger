@@ -14,27 +14,33 @@
     
     <h1>🎁 Etiqueta de Agradecimento</h1>
     <div class="container">
-        <label>Escolha um ícone:</label>
-        <div class="icon-selector" id="iconSelector">
-            <!-- Carregado dinamicamente -->
-        </div>
-
-        <label>Texto de agradecimento:</label>
-        <input type="text" id="thankYouText" placeholder="Ex: Obrigado Elaine" value="Obrigado!">
-
-        <label>Prévia:</label>
-        <div class="preview-container">
-            <div class="thank-you-label" id="labelPreview">
-                <div class="label-icon" id="previewIcon">
-                    <img src="images/Harry-Potter-Glasses.png" alt="Harry Potter" width="80">
+        <div class="layout-split">
+            <div class="controls">
+                <label>Escolha um ícone:</label>
+                <div class="icon-selector" id="iconSelector">
+                    <!-- Carregado dinamicamente -->
                 </div>
-                <div class="label-text" id="previewText">Obrigado!</div>
-            </div>
-        </div>
 
-        <div class="btn-row">
-            <button id="imprimirBtn" class="hide-mobile">🖨️ Imprimir</button>
-            <button id="downloadLabelBtn">📄 Gerar PDF</button>
+                <label>Texto de agradecimento:</label>
+                <input type="text" id="thankYouText" placeholder="Ex: Obrigado Elaine" value="Obrigado!">
+            </div>
+
+            <div class="preview-side">
+                <label>Prévia:</label>
+                <div class="preview-container">
+                    <div class="thank-you-label" id="labelPreview">
+                        <div class="label-icon" id="previewIcon">
+                            <img src="images/Harry-Potter-Glasses.png" alt="Harry Potter" width="80">
+                        </div>
+                        <div class="label-text" id="previewText">Obrigado!</div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="imprimirBtn" class="hide-mobile">🖨️ Imprimir</button>
+                    <button id="downloadLabelBtn">📄 Gerar PDF</button>
+                </div>
+            </div>
         </div>
     </div>
 
