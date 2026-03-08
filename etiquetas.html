@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etiquetas Shopee - PDF Merger</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="breadcrumb">
+        <a href="index.html">← Voltar</a>
+    </nav>
+    
+    <h1>🏷️ Etiquetas Shopee</h1>
+    <div class="container">
+        <label>Selecione o PDF da etiqueta:</label>
+        <input type="file" id="pdfInput" accept=".pdf">
+        
+        <div class="options">
+            <label class="radio-label">
+                <input type="radio" name="format" value="thermal" checked>
+                <span>Etiquetadora Térmica (100x150mm)</span>
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="format" value="a4">
+                <span>Folha A4</span>
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="format" value="single">
+                <span>Etiqueta Única (2 em 1)</span>
+            </label>
+        </div>
+        
+        <button id="processBtn" disabled>Processar e Baixar</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="js/thermal.js"></script>
+    <script src="js/a4.js"></script>
+    <script src="js/single.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
