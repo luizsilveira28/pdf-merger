@@ -16,8 +16,19 @@
     <div class="container">
         <div class="layout-split">
             <div class="controls">
-                <label>Selecione o PDF da etiqueta:</label>
-                <input type="file" id="pdfInput" accept=".pdf">
+                <label>Selecione os PDFs das etiquetas:</label>
+                <div class="file-input-wrapper">
+                    <button type="button" class="file-input-btn" id="addFilesBtn">+ Adicionar PDFs</button>
+                    <input type="file" id="pdfInput" accept=".pdf" multiple>
+                </div>
+                
+                <div class="pdf-list" id="pdfList" style="display: none;">
+                    <div class="pdf-list-header">
+                        <span id="pdfCount">0 arquivos</span>
+                        <button type="button" class="btn-link" id="clearAll">Limpar todos</button>
+                    </div>
+                    <ul id="pdfItems"></ul>
+                </div>
                 
                 <div class="options">
                     <label class="radio-label">
@@ -36,7 +47,7 @@
             </div>
 
             <div class="preview-side">
-                <label>Pré-visualização:</label>
+                <label>Pré-visualização: <span id="previewFileName"></span></label>
                 <div class="preview-container pdf-preview-container">
                     <div class="pdf-preview-placeholder" id="pdfPreviewPlaceholder">
                         <span>📄</span>

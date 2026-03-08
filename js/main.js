@@ -4,6 +4,12 @@ const processBtn = document.getElementById('processBtn');
 const imprimirBtn = document.getElementById('imprimirBtn');
 const status = document.getElementById('status');
 
+// Lista de PDFs
+const pdfList = document.getElementById('pdfList');
+const pdfItems = document.getElementById('pdfItems');
+const pdfCount = document.getElementById('pdfCount');
+const clearAll = document.getElementById('clearAll');
+
 // Preview elements
 const pdfPreviewCanvas = document.getElementById('pdfPreviewCanvas');
 const pdfPreviewPlaceholder = document.getElementById('pdfPreviewPlaceholder');
@@ -11,22 +17,65 @@ const pdfPageNav = document.getElementById('pdfPageNav');
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageInfo = document.getElementById('pageInfo');
+const previewFileName = document.getElementById('previewFileName');
 const formatRadios = document.querySelectorAll('input[name="format"]');
 
 let previewPdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
-let srcFileBytes = null;
+let pdfFiles = []; // Array de arquivos PDF
+let pageToFileMap = []; // Mapeia página do preview para arquivo original
 
 // Configurar PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+function updatePdfList() {
+    pdfItems.innerHTML = '';
+    pdfFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span title="${file.name}">📄 ${file.name}</span>
+            <button type="button" data-index="${index}">✕</button>
+        `;
+        pdfItems.appendChild(li);
+    });
+    
+    const count = pdfFiles.length;
+    pdfCount.textContent = `${count} arquivo${count !== 1 ? 's' : ''}`;
+    pdfList.style.display = count > 0 ? 'block' : 'none';
+    
+    const hasFiles = count > 0;
+    processBtn.disabled = !hasFiles;
+    imprimirBtn.disabled = !hasFiles;
+}
+
+// Remover PDF individual
+pdfItems.addEventListener('click', async (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        const index = parseInt(e.target.dataset.index);
+        pdfFiles.splice(index, 1);
+        updatePdfList();
+        await updatePreview();
+    }
+});
+
+// Limpar todos
+clearAll.onclick = async () => {
+    pdfFiles = [];
+    pageToFileMap = [];
+    pdfInput.value = '';
+    updatePdfList();
+    pdfPreviewPlaceholder.style.display = 'flex';
+    pdfPreviewCanvas.style.display = 'none';
+    pdfPageNav.style.display = 'none';
+    previewFileName.textContent = '';
+};
 
 async function renderPage(pageNum) {
     const page = await previewPdfDoc.getPage(pageNum);
     const canvas = pdfPreviewCanvas;
     const ctx = canvas.getContext('2d');
     
-    // Calcular escala para caber no container
     const containerWidth = canvas.parentElement.clientWidth - 40;
     const viewport = page.getViewport({ scale: 1 });
     const scale = Math.min(containerWidth / viewport.width, 300 / viewport.height);
@@ -43,25 +92,88 @@ async function renderPage(pageNum) {
     pageInfo.textContent = `${pageNum} / ${totalPages}`;
     prevPageBtn.disabled = pageNum <= 1;
     nextPageBtn.disabled = pageNum >= totalPages;
+    
+    // Mostrar nome do arquivo
+    if (pageToFileMap[pageNum - 1]) {
+        previewFileName.textContent = pageToFileMap[pageNum - 1];
+    }
+}
+
+async function mergeAndProcess(format) {
+    // Criar documento combinado e mapear páginas
+    const mergedDoc = await PDFLib.PDFDocument.create();
+    pageToFileMap = [];
+    
+    let totalPairs = 0;
+    const filePairCounts = []; // Quantos pares cada arquivo tem
+    
+    for (const file of pdfFiles) {
+        const fileBytes = await file.arrayBuffer();
+        const srcDoc = await PDFLib.PDFDocument.load(fileBytes);
+        const srcPageCount = srcDoc.getPageCount();
+        const pages = await mergedDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+        pages.forEach(page => mergedDoc.addPage(page));
+        
+        const pairsInFile = Math.floor(srcPageCount / 2);
+        filePairCounts.push({ name: file.name, pairs: pairsInFile });
+        totalPairs += pairsInFile;
+    }
+    
+    // Mapear páginas de saída para arquivos
+    if (format === 'thermal') {
+        // 2 páginas de saída por par
+        for (const file of filePairCounts) {
+            for (let p = 0; p < file.pairs * 2; p++) {
+                pageToFileMap.push(file.name);
+            }
+        }
+    } else if (format === 'single') {
+        // 1 página de saída por par
+        for (const file of filePairCounts) {
+            for (let p = 0; p < file.pairs; p++) {
+                pageToFileMap.push(file.name);
+            }
+        }
+    } else {
+        // A4: 4 etiquetas por página, então ceil(totalPairs/4) páginas
+        // Cada página mostra até 4 arquivos
+        let pairIndex = 0;
+        for (const file of filePairCounts) {
+            for (let p = 0; p < file.pairs; p++) {
+                const outputPage = Math.floor(pairIndex / 4);
+                if (!pageToFileMap[outputPage]) {
+                    pageToFileMap[outputPage] = file.name;
+                } else if (!pageToFileMap[outputPage].includes(file.name)) {
+                    pageToFileMap[outputPage] += ', ' + file.name;
+                }
+                pairIndex++;
+            }
+        }
+    }
+    
+    // Processar no formato escolhido
+    if (format === 'thermal') {
+        return await processThermal(mergedDoc);
+    } else if (format === 'single') {
+        return await processSingle(mergedDoc);
+    } else {
+        return await processA4(mergedDoc);
+    }
 }
 
 async function updatePreview() {
-    if (!srcFileBytes) return;
+    if (pdfFiles.length === 0) {
+        pdfPreviewPlaceholder.style.display = 'flex';
+        pdfPreviewCanvas.style.display = 'none';
+        pdfPageNav.style.display = 'none';
+        return;
+    }
     
     try {
         status.textContent = 'Gerando preview...';
         
         const format = document.querySelector('input[name="format"]:checked').value;
-        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
-        
-        let pdfBytes;
-        if (format === 'thermal') {
-            pdfBytes = await processThermal(srcDoc);
-        } else if (format === 'single') {
-            pdfBytes = await processSingle(srcDoc);
-        } else {
-            pdfBytes = await processA4(srcDoc);
-        }
+        const pdfBytes = await mergeAndProcess(format);
         
         previewPdfDoc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
         totalPages = previewPdfDoc.numPages;
@@ -75,22 +187,18 @@ async function updatePreview() {
         status.textContent = '';
     } catch (e) {
         status.textContent = 'Erro no preview: ' + e.message;
+        console.error(e);
     }
 }
 
 pdfInput.onchange = async () => {
-    const hasFile = pdfInput.files.length > 0;
-    processBtn.disabled = !hasFile;
-    imprimirBtn.disabled = !hasFile;
-    
-    if (hasFile) {
-        srcFileBytes = await pdfInput.files[0].arrayBuffer();
+    if (pdfInput.files.length > 0) {
+        // Adicionar novos arquivos à lista
+        for (const file of pdfInput.files) {
+            pdfFiles.push(file);
+        }
+        updatePdfList();
         await updatePreview();
-    } else {
-        srcFileBytes = null;
-        pdfPreviewPlaceholder.style.display = 'flex';
-        pdfPreviewCanvas.style.display = 'none';
-        pdfPageNav.style.display = 'none';
     }
 };
 
@@ -113,26 +221,22 @@ nextPageBtn.onclick = async () => {
     }
 };
 
+
 processBtn.onclick = async () => {
     try {
         status.textContent = 'Processando...';
         processBtn.disabled = true;
 
         const format = document.querySelector('input[name="format"]:checked').value;
-        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
+        const pdfBytes = await mergeAndProcess(format);
 
-        let pdfBytes;
         let filename;
-
         if (format === 'thermal') {
-            pdfBytes = await processThermal(srcDoc);
-            filename = 'etiqueta_100x150.pdf';
+            filename = 'etiquetas_100x150.pdf';
         } else if (format === 'single') {
-            pdfBytes = await processSingle(srcDoc);
-            filename = 'etiqueta_unica.pdf';
+            filename = 'etiquetas_unica.pdf';
         } else {
-            pdfBytes = await processA4(srcDoc);
-            filename = 'etiqueta_a4.pdf';
+            filename = 'etiquetas_a4.pdf';
         }
 
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -158,17 +262,7 @@ imprimirBtn.onclick = async () => {
         imprimirBtn.disabled = true;
 
         const format = document.querySelector('input[name="format"]:checked').value;
-        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
-
-        let pdfBytes;
-
-        if (format === 'thermal') {
-            pdfBytes = await processThermal(srcDoc);
-        } else if (format === 'single') {
-            pdfBytes = await processSingle(srcDoc);
-        } else {
-            pdfBytes = await processA4(srcDoc);
-        }
+        const pdfBytes = await mergeAndProcess(format);
 
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
