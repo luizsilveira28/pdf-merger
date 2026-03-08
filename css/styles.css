@@ -224,18 +224,23 @@ input[type="text"]:focus {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 4px 6px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .label-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 65px;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
 }
 
 .label-icon img {
-    max-width: 60px;
-    max-height: 55px;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
 }
 
@@ -244,10 +249,48 @@ input[type="text"]:focus {
     font-weight: 600;
     color: #333;
     text-align: center;
-    height: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+/* Sem texto - ícone ocupa tudo */
+.thank-you-label.text-lines-0 .label-icon {
+    flex: 1;
+}
+
+/* 1 linha de texto */
+.thank-you-label.text-lines-1 .label-text {
+    height: 16px;
+    font-size: 11px;
+}
+
+/* 2 linhas de texto */
+.thank-you-label.text-lines-2 .label-text {
+    height: 28px;
+    font-size: 10px;
+}
+
+/* 3 linhas de texto */
+.thank-you-label.text-lines-3 .label-text {
+    height: 38px;
+    font-size: 9px;
+}
+
+/* 4+ linhas de texto */
+.thank-you-label.text-lines-4 .label-text {
+    height: 48px;
+    font-size: 8px;
+}
+
+/* Só texto, sem ícone */
+.thank-you-label.text-only .label-text {
+    flex: 1;
+    font-size: 14px;
+    padding: 8px;
 }
 
 .img-selector {

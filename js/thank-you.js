@@ -74,17 +74,43 @@ async function updatePreview() {
     let imgSrc = null;
     
     if (customImage) {
-        imgSrc = customImage; // já está em grayscale
+        imgSrc = customImage;
     } else if (selectedIndex >= 0 && ICON_DATA[selectedIndex]) {
         imgSrc = await toGrayscale(ICON_DATA[selectedIndex].data);
     }
     
     if (imgSrc) {
-        previewIcon.innerHTML = `<img src="${imgSrc}" style="max-width:80px;max-height:60px;">`;
+        previewIcon.innerHTML = `<img src="${imgSrc}">`;
+        previewIcon.style.display = 'flex';
     } else {
         previewIcon.innerHTML = '';
+        previewIcon.style.display = 'none';
     }
+    
     previewText.innerText = text;
+    previewText.style.display = text ? 'flex' : 'none';
+    
+    // Remover classes anteriores
+    labelPreview.className = 'thank-you-label';
+    
+    const hasIcon = !!imgSrc;
+    const hasText = !!text.trim();
+    
+    if (!hasIcon && hasText) {
+        labelPreview.classList.add('text-only');
+    } else if (hasText) {
+        // Calcular número de linhas baseado no comprimento do texto
+        const textLength = text.length;
+        let lines = 1;
+        if (textLength > 50) lines = 4;
+        else if (textLength > 35) lines = 3;
+        else if (textLength > 20) lines = 2;
+        else lines = 1;
+        
+        labelPreview.classList.add(`text-lines-${lines}`);
+    } else {
+        labelPreview.classList.add('text-lines-0');
+    }
 }
 
 thankYouText.addEventListener('input', updatePreview);
@@ -127,12 +153,37 @@ async function fillPreviewWithLabel(etiqueta) {
     }
     
     if (imgSrc) {
-        previewIcon.innerHTML = `<img src="${imgSrc}" style="max-width:80px;max-height:60px;">`;
+        previewIcon.innerHTML = `<img src="${imgSrc}">`;
+        previewIcon.style.display = 'flex';
     } else {
         previewIcon.innerHTML = '';
+        previewIcon.style.display = 'none';
     }
     
-    previewText.innerText = etiqueta.text || '';
+    const text = etiqueta.text || '';
+    previewText.innerText = text;
+    previewText.style.display = text ? 'flex' : 'none';
+    
+    // Remover classes anteriores
+    labelPreview.className = 'thank-you-label';
+    
+    const hasIcon = !!imgSrc;
+    const hasText = !!text.trim();
+    
+    if (!hasIcon && hasText) {
+        labelPreview.classList.add('text-only');
+    } else if (hasText) {
+        const textLength = text.length;
+        let lines = 1;
+        if (textLength > 50) lines = 4;
+        else if (textLength > 35) lines = 3;
+        else if (textLength > 20) lines = 2;
+        else lines = 1;
+        
+        labelPreview.classList.add(`text-lines-${lines}`);
+    } else {
+        labelPreview.classList.add('text-lines-0');
+    }
 }
 
 function updateNav() {
