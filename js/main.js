@@ -202,6 +202,33 @@ pdfInput.onchange = async () => {
     }
 };
 
+// Drag and drop
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (files.length > 0) {
+        for (const file of files) {
+            pdfFiles.push(file);
+        }
+        updatePdfList();
+        await updatePreview();
+    }
+});
+
 // Atualizar preview quando mudar o formato
 formatRadios.forEach(radio => {
     radio.addEventListener('change', updatePreview);

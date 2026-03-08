@@ -28,7 +28,7 @@ function renderIconSelector() {
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
     fileInput.addEventListener('change', handleCustomUpload);
-    customLabel.appendChild(fileInput);
+    selector.appendChild(fileInput);
     
     customLabel.addEventListener('click', () => fileInput.click());
     selector.appendChild(customLabel);

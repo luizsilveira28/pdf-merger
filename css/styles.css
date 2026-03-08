@@ -729,10 +729,28 @@ input[type="text"]:focus {
 }
 
 
-/* Input de arquivo customizado */
+/* Input de arquivo customizado - Drop Zone */
 .file-input-wrapper {
     position: relative;
     margin-bottom: 15px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px 20px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: #f9f9f9;
+}
+
+.file-input-wrapper:hover {
+    border-color: #EE4D2D;
+    background: #FFF5F3;
+}
+
+.file-input-wrapper.drag-over {
+    border-color: #EE4D2D;
+    background: #FFF5F3;
+    border-style: solid;
 }
 
 .file-input-wrapper input[type="file"] {
@@ -745,20 +763,37 @@ input[type="text"]:focus {
     cursor: pointer;
 }
 
-.file-input-btn {
-    width: 100%;
-    padding: 15px;
-    background: #f9f9f9;
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    color: #666;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
 }
 
-.file-input-btn:hover {
-    border-color: #EE4D2D;
-    background: #FFF5F3;
-    color: #EE4D2D;
+.drop-icon {
+    font-size: 2rem;
+}
+
+.drop-text {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.drop-text-mobile {
+    display: none;
+    color: #666;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .drop-text {
+        display: none;
+    }
+    .drop-text-mobile {
+        display: block;
+    }
+    .file-input-wrapper {
+        padding: 20px;
+    }
 }

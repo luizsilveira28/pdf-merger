@@ -17,8 +17,12 @@
         <div class="layout-split">
             <div class="controls">
                 <label>Selecione os PDFs das etiquetas:</label>
-                <div class="file-input-wrapper">
-                    <button type="button" class="file-input-btn" id="addFilesBtn">+ Adicionar PDFs</button>
+                <div class="file-input-wrapper" id="dropZone">
+                    <div class="drop-zone-content">
+                        <span class="drop-icon">📁</span>
+                        <span class="drop-text">Arraste PDFs aqui ou clique para selecionar</span>
+                        <span class="drop-text-mobile">Toque para selecionar PDFs</span>
+                    </div>
                     <input type="file" id="pdfInput" accept=".pdf" multiple>
                 </div>
                 
