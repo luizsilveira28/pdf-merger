@@ -4,21 +4,24 @@
 function initDarkMode() {
     const toggle = document.createElement('button');
     toggle.className = 'theme-toggle';
-    toggle.innerHTML = '🌙';
-    toggle.title = 'Alternar modo escuro';
     document.body.appendChild(toggle);
 
-    // Carregar preferência
-    if (localStorage.getItem('darkMode') === 'true') {
+    // Carregar preferência (default: escuro)
+    const savedPref = localStorage.getItem('darkMode');
+    const isDark = savedPref === null ? true : savedPref === 'true';
+    
+    if (isDark) {
         document.documentElement.classList.add('dark-mode');
         toggle.innerHTML = '☀️';
+    } else {
+        toggle.innerHTML = '🌙';
     }
 
     toggle.addEventListener('click', () => {
         document.documentElement.classList.toggle('dark-mode');
-        const isDark = document.documentElement.classList.contains('dark-mode');
-        localStorage.setItem('darkMode', isDark);
-        toggle.innerHTML = isDark ? '☀️' : '🌙';
+        const isDarkNow = document.documentElement.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDarkNow);
+        toggle.innerHTML = isDarkNow ? '☀️' : '🌙';
     });
 }
 
