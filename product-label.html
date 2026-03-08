@@ -139,18 +139,18 @@
                 <button type="button" id="addLabel" class="btn-add">+ Adicionar etiqueta</button>
 
                 <div class="btn-row">
-                    <button id="imprimirBtn" class="hide-mobile">🖨️ Imprimir</button>
-                    <button id="gerarBtn">📄 Gerar PDF</button>
+                    <button id="imprimirBtn" class="hide-mobile" aria-label="Imprimir etiquetas">🖨️ Imprimir</button>
+                    <button id="gerarBtn" aria-label="Gerar PDF das etiquetas">📄 Gerar PDF</button>
                 </div>
-                <p class="status" id="status"></p>
+                <p class="status" id="status" role="status" aria-live="polite"></p>
             </div>
         </div>
     </div>
 
     <!-- Modal de Zoom -->
-    <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Visualização ampliada da etiqueta">
         <div class="modal-content modal-simple">
-            <button class="modal-close" id="modalClose">✕</button>
+            <button class="modal-close" id="modalClose" aria-label="Fechar visualização">✕</button>
             <div class="modal-preview-container" id="modalPreviewContainer"></div>
         </div>
     </div>

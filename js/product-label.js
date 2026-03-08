@@ -32,31 +32,6 @@ let imagemBase64 = null;
 let imagemGrayscale = null;
 let tipoImagem = 'custom';
 
-// Converter para grayscale
-function toGrayscale(base64) {
-    return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-                data[i] = gray;
-                data[i + 1] = gray;
-                data[i + 2] = gray;
-            }
-            ctx.putImageData(imageData, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
-        };
-        img.src = base64;
-    });
-}
-
 // Carregar ícones predefinidos
 const iconMap = {};
 PRODUCT_ICONS.forEach(icon => {
@@ -259,7 +234,7 @@ async function gerarPdfBytes() {
 const imprimirBtn = document.getElementById('imprimirBtn');
 imprimirBtn.onclick = async () => {
     try {
-        statusEl.textContent = 'Preparando impressão...';
+        showStatus(statusEl, 'Preparando impressão...', 'info');
         imprimirBtn.disabled = true;
 
         let pdfBytes;
@@ -271,7 +246,7 @@ imprimirBtn.onclick = async () => {
             const savedIndex = currentCsvIndex;
 
             for (let i = 0; i < csvProdutos.length; i++) {
-                statusEl.textContent = `Preparando ${i + 1}/${csvProdutos.length}...`;
+                showStatus(statusEl, `Preparando ${i + 1}/${csvProdutos.length}...`, 'info');
                 fillPreviewWithProduct(csvProdutos[i]);
                 await new Promise(r => setTimeout(r, 300));
                 const pageBytes = await gerarPdfBytes();
@@ -294,12 +269,16 @@ imprimirBtn.onclick = async () => {
         const url = URL.createObjectURL(blob);
         
         const printWindow = window.open(url, '_blank');
-        printWindow.onload = () => printWindow.print();
+        if (printWindow) {
+            printWindow.onload = () => printWindow.print();
+            showStatus(statusEl, 'Janela de impressão aberta', 'success');
+        } else {
+            showStatus(statusEl, 'Popup bloqueado. Permita popups para imprimir.', 'error');
+        }
         
-        statusEl.textContent = '';
         imprimirBtn.disabled = false;
     } catch (e) {
-        statusEl.textContent = 'Erro: ' + e.message;
+        showStatus(statusEl, 'Erro ao preparar impressão: ' + e.message, 'error');
         imprimirBtn.disabled = false;
         console.error(e);
     }
@@ -387,15 +366,18 @@ csvInput.onchange = () => {
         reader.onload = (e) => {
             try {
                 console.log('File content:', e.target.result);
-                const lines = e.target.result.trim().split('\n');
-                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-                console.log('Headers:', headers);
-                const newProducts = lines.slice(1).map(line => {
-                    const values = line.split(',').map(v => v.trim());
-                    const obj = {};
-                    headers.forEach((h, i) => obj[h] = values[i] || '');
-                    return obj;
-                }).filter(p => p.nome || p.codigo_barras || p.qrcode);
+                
+                // Usar parser robusto do global.js
+                const { data: newProducts } = parseCSV(e.target.result);
+                
+                // Filtrar produtos válidos (pelo menos nome ou código)
+                const validProducts = newProducts.filter(p => 
+                    p.nome || p.codigo_barras || p.qrcode
+                );
+                
+                if (validProducts.length === 0) {
+                    throw new Error('Nenhum produto válido encontrado no CSV');
+                }
                 
                 // Salvar etiqueta atual se tiver conteúdo
                 if (csvProdutos.length > 0) {
@@ -414,16 +396,16 @@ csvInput.onchange = () => {
                 }
                 
                 // Adicionar novos produtos
-                csvProdutos = csvProdutos.concat(newProducts);
+                csvProdutos = csvProdutos.concat(validProducts);
                 
                 console.log('Produtos:', csvProdutos);
                 csvCount.textContent = `${csvProdutos.length} produtos`;
                 csvInfo.style.display = csvProdutos.length > 0 ? 'flex' : 'none';
-                statusEl.textContent = `${newProducts.length} produtos adicionados (total: ${csvProdutos.length})`;
+                showStatus(statusEl, `${validProducts.length} produtos importados (total: ${csvProdutos.length})`, 'success');
                 
                 // Mostrar primeiro produto adicionado
-                if (newProducts.length > 0) {
-                    currentCsvIndex = csvProdutos.length - newProducts.length;
+                if (validProducts.length > 0) {
+                    currentCsvIndex = csvProdutos.length - validProducts.length;
                     fillPreviewWithProduct(csvProdutos[currentCsvIndex]);
                     updateCsvNav();
                     preview.style.display = 'flex';
@@ -431,8 +413,11 @@ csvInput.onchange = () => {
                 }
             } catch (err) {
                 console.error('Erro CSV:', err);
-                statusEl.textContent = 'Erro ao ler CSV: ' + err.message;
+                showStatus(statusEl, 'Erro ao ler CSV: ' + err.message, 'error');
             }
+        };
+        reader.onerror = () => {
+            showStatus(statusEl, 'Erro ao ler arquivo CSV', 'error');
         };
         reader.readAsText(csvInput.files[0]);
     }
@@ -631,7 +616,7 @@ gerarBtn.onclick = async () => {
     if (csvProdutos.length === 0) {
         // Gerar etiqueta única
         try {
-            statusEl.textContent = 'Gerando PDF...';
+            showStatus(statusEl, 'Gerando PDF...', 'info');
             gerarBtn.disabled = true;
 
             const pdfBytes = await gerarPdfBytes();
@@ -644,29 +629,26 @@ gerarBtn.onclick = async () => {
             a.click();
 
             URL.revokeObjectURL(url);
-            statusEl.textContent = 'PDF gerado!';
+            showStatus(statusEl, 'PDF gerado com sucesso!', 'success');
             gerarBtn.disabled = false;
         } catch (e) {
-            statusEl.textContent = 'Erro: ' + e.message;
+            showStatus(statusEl, 'Erro ao gerar PDF: ' + e.message, 'error');
             gerarBtn.disabled = false;
         }
     } else {
         // Gerar lote
         try {
-            statusEl.textContent = 'Gerando PDF em lote...';
+            showStatus(statusEl, 'Gerando PDF em lote...', 'info');
             gerarBtn.disabled = true;
 
             const pdfDoc = await PDFLib.PDFDocument.create();
-            const mmToPt = 2.83465;
-            const pdfWidth = 51 * mmToPt;
-            const pdfHeight = 25 * mmToPt;
 
             // Salvar produto atual antes de iterar
             saveCurrentProduct();
             const savedIndex = currentCsvIndex;
 
             for (let i = 0; i < csvProdutos.length; i++) {
-                statusEl.textContent = `Gerando ${i + 1}/${csvProdutos.length}...`;
+                showStatus(statusEl, `Gerando ${i + 1}/${csvProdutos.length}...`, 'info');
                 
                 fillPreviewWithProduct(csvProdutos[i]);
                 
@@ -694,10 +676,10 @@ gerarBtn.onclick = async () => {
             a.click();
 
             URL.revokeObjectURL(url);
-            statusEl.textContent = `PDF gerado com ${csvProdutos.length} etiquetas!`;
+            showStatus(statusEl, `PDF gerado com ${csvProdutos.length} etiquetas!`, 'success');
             gerarBtn.disabled = false;
         } catch (e) {
-            statusEl.textContent = 'Erro: ' + e.message;
+            showStatus(statusEl, 'Erro ao gerar lote: ' + e.message, 'error');
             gerarBtn.disabled = false;
             console.error(e);
         }

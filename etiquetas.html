@@ -18,14 +18,14 @@
     <div class="container">
         <div class="layout-split">
             <div class="controls">
-                <label>Selecione os PDFs das etiquetas:</label>
-                <div class="file-input-wrapper" id="dropZone">
+                <label id="pdfInputLabel">Selecione os PDFs das etiquetas:</label>
+                <div class="file-input-wrapper" id="dropZone" role="button" aria-labelledby="pdfInputLabel" tabindex="0">
                     <div class="drop-zone-content">
-                        <span class="drop-icon">📁</span>
+                        <span class="drop-icon" aria-hidden="true">📁</span>
                         <span class="drop-text">Arraste PDFs aqui ou clique para selecionar</span>
                         <span class="drop-text-mobile">Toque para selecionar PDFs</span>
                     </div>
-                    <input type="file" id="pdfInput" accept=".pdf" multiple>
+                    <input type="file" id="pdfInput" accept=".pdf" multiple aria-labelledby="pdfInputLabel">
                 </div>
                 
                 <div class="pdf-list" id="pdfList" style="display: none;">
@@ -68,18 +68,18 @@
                 </div>
                 
                 <div class="btn-row">
-                    <button id="imprimirBtn" class="hide-mobile" disabled>🖨️ Imprimir</button>
-                    <button id="processBtn" disabled>📄 Processar e Baixar</button>
+                    <button id="imprimirBtn" class="hide-mobile" disabled aria-label="Imprimir etiquetas">🖨️ Imprimir</button>
+                    <button id="processBtn" disabled aria-label="Processar e baixar PDF">📄 Processar e Baixar</button>
                 </div>
-                <div class="status" id="status"></div>
+                <div class="status" id="status" role="status" aria-live="polite"></div>
             </div>
         </div>
     </div>
 
     <!-- Modal de Zoom -->
-    <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Visualização ampliada">
         <div class="modal-content">
-            <button class="modal-close" id="modalClose">✕</button>
+            <button class="modal-close" id="modalClose" aria-label="Fechar visualização">✕</button>
             <div class="modal-canvas-container">
                 <canvas id="modalCanvas"></canvas>
             </div>
