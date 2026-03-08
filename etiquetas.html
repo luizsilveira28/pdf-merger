@@ -59,6 +59,26 @@
         </div>
     </div>
 
+    <!-- Modal de Zoom -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">✕</button>
+            <div class="modal-canvas-container">
+                <canvas id="modalCanvas"></canvas>
+            </div>
+            <div class="modal-nav">
+                <button type="button" id="modalPrevPage">←</button>
+                <span id="modalPageInfo">1 / 1</span>
+                <button type="button" id="modalNextPage">→</button>
+            </div>
+            <div class="modal-zoom">
+                <button type="button" id="zoomOut">−</button>
+                <span id="zoomLevel">100%</span>
+                <button type="button" id="zoomIn">+</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="js/thermal.js"></script>

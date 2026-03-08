@@ -185,3 +185,93 @@ imprimirBtn.onclick = async () => {
         imprimirBtn.disabled = false;
     }
 };
+
+// Modal de Zoom
+const modalOverlay = document.getElementById('modalOverlay');
+const modalClose = document.getElementById('modalClose');
+const modalCanvas = document.getElementById('modalCanvas');
+const modalPrevPage = document.getElementById('modalPrevPage');
+const modalNextPage = document.getElementById('modalNextPage');
+const modalPageInfo = document.getElementById('modalPageInfo');
+const zoomIn = document.getElementById('zoomIn');
+const zoomOut = document.getElementById('zoomOut');
+const zoomLevel = document.getElementById('zoomLevel');
+
+let modalZoom = 1;
+
+async function renderModalPage() {
+    if (!previewPdfDoc) return;
+    
+    const page = await previewPdfDoc.getPage(currentPage);
+    const ctx = modalCanvas.getContext('2d');
+    
+    const baseScale = 1.5;
+    const viewport = page.getViewport({ scale: baseScale * modalZoom });
+    
+    modalCanvas.width = viewport.width;
+    modalCanvas.height = viewport.height;
+    
+    await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+    }).promise;
+    
+    modalPageInfo.textContent = `${currentPage} / ${totalPages}`;
+    modalPrevPage.disabled = currentPage <= 1;
+    modalNextPage.disabled = currentPage >= totalPages;
+    zoomLevel.textContent = `${Math.round(modalZoom * 100)}%`;
+}
+
+pdfPreviewCanvas.onclick = () => {
+    if (!previewPdfDoc) return;
+    modalZoom = 1;
+    modalOverlay.classList.add('active');
+    renderModalPage();
+};
+
+modalClose.onclick = () => {
+    modalOverlay.classList.remove('active');
+};
+
+modalOverlay.onclick = (e) => {
+    if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('active');
+    }
+};
+
+modalPrevPage.onclick = async () => {
+    if (currentPage > 1) {
+        currentPage--;
+        await renderPage(currentPage);
+        await renderModalPage();
+    }
+};
+
+modalNextPage.onclick = async () => {
+    if (currentPage < totalPages) {
+        currentPage++;
+        await renderPage(currentPage);
+        await renderModalPage();
+    }
+};
+
+zoomIn.onclick = () => {
+    if (modalZoom < 3) {
+        modalZoom += 0.25;
+        renderModalPage();
+    }
+};
+
+zoomOut.onclick = () => {
+    if (modalZoom > 0.5) {
+        modalZoom -= 0.25;
+        renderModalPage();
+    }
+};
+
+// Fechar modal com ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+        modalOverlay.classList.remove('active');
+    }
+});
