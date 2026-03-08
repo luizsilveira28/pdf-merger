@@ -14,32 +14,53 @@
     
     <h1>🏷️ Etiquetas Shopee</h1>
     <div class="container">
-        <label>Selecione o PDF da etiqueta:</label>
-        <input type="file" id="pdfInput" accept=".pdf">
-        
-        <div class="options">
-            <label class="radio-label">
-                <input type="radio" name="format" value="thermal" checked>
-                <span>Etiquetadora Térmica (100x150mm)</span>
-            </label>
-            <label class="radio-label">
-                <input type="radio" name="format" value="a4">
-                <span>Folha A4</span>
-            </label>
-            <label class="radio-label">
-                <input type="radio" name="format" value="single">
-                <span>Etiqueta Única (2 em 1)</span>
-            </label>
+        <div class="layout-split">
+            <div class="controls">
+                <label>Selecione o PDF da etiqueta:</label>
+                <input type="file" id="pdfInput" accept=".pdf">
+                
+                <div class="options">
+                    <label class="radio-label">
+                        <input type="radio" name="format" value="thermal" checked>
+                        <span>Etiquetadora Térmica (100x150mm)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="format" value="a4">
+                        <span>Folha A4</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="format" value="single">
+                        <span>Etiqueta Única (2 em 1)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="preview-side">
+                <label>Pré-visualização:</label>
+                <div class="preview-container pdf-preview-container">
+                    <div class="pdf-preview-placeholder" id="pdfPreviewPlaceholder">
+                        <span>📄</span>
+                        <p>Selecione um PDF</p>
+                    </div>
+                    <canvas id="pdfPreviewCanvas" style="display: none;"></canvas>
+                </div>
+                <div class="pdf-page-nav" id="pdfPageNav" style="display: none;">
+                    <button type="button" id="prevPage">←</button>
+                    <span id="pageInfo">1 / 1</span>
+                    <button type="button" id="nextPage">→</button>
+                </div>
+                
+                <div class="btn-row">
+                    <button id="imprimirBtn" class="hide-mobile" disabled>🖨️ Imprimir</button>
+                    <button id="processBtn" disabled>📄 Processar e Baixar</button>
+                </div>
+                <div class="status" id="status"></div>
+            </div>
         </div>
-        
-        <div class="btn-row">
-            <button id="imprimirBtn" class="hide-mobile" disabled>🖨️ Imprimir</button>
-            <button id="processBtn" disabled>📄 Processar e Baixar</button>
-        </div>
-        <div class="status" id="status"></div>
     </div>
 
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="js/thermal.js"></script>
     <script src="js/a4.js"></script>
     <script src="js/single.js"></script>

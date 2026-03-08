@@ -487,3 +487,60 @@ input[type="text"]:focus {
         margin-top: 10px;
     }
 }
+
+
+/* Preview de PDF */
+.pdf-preview-container {
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.pdf-preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    gap: 10px;
+}
+
+.pdf-preview-placeholder span {
+    font-size: 3rem;
+}
+
+.pdf-preview-placeholder p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+#pdfPreviewCanvas {
+    max-width: 100%;
+    max-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.pdf-page-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0 15px;
+}
+
+.pdf-page-nav button {
+    width: 40px;
+    padding: 8px;
+    font-size: 1rem;
+}
+
+.pdf-page-nav span {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+@media (min-width: 769px) {
+    #pdfPreviewCanvas {
+        max-height: 400px;
+    }
+}

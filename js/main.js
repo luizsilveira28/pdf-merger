@@ -4,13 +4,113 @@ const processBtn = document.getElementById('processBtn');
 const imprimirBtn = document.getElementById('imprimirBtn');
 const status = document.getElementById('status');
 
-let lastPdfBytes = null;
-let lastFilename = null;
+// Preview elements
+const pdfPreviewCanvas = document.getElementById('pdfPreviewCanvas');
+const pdfPreviewPlaceholder = document.getElementById('pdfPreviewPlaceholder');
+const pdfPageNav = document.getElementById('pdfPageNav');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageInfo = document.getElementById('pageInfo');
+const formatRadios = document.querySelectorAll('input[name="format"]');
 
-pdfInput.onchange = () => {
+let previewPdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+let srcFileBytes = null;
+
+// Configurar PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function renderPage(pageNum) {
+    const page = await previewPdfDoc.getPage(pageNum);
+    const canvas = pdfPreviewCanvas;
+    const ctx = canvas.getContext('2d');
+    
+    // Calcular escala para caber no container
+    const containerWidth = canvas.parentElement.clientWidth - 40;
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(containerWidth / viewport.width, 300 / viewport.height);
+    const scaledViewport = page.getViewport({ scale });
+    
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
+    
+    await page.render({
+        canvasContext: ctx,
+        viewport: scaledViewport
+    }).promise;
+    
+    pageInfo.textContent = `${pageNum} / ${totalPages}`;
+    prevPageBtn.disabled = pageNum <= 1;
+    nextPageBtn.disabled = pageNum >= totalPages;
+}
+
+async function updatePreview() {
+    if (!srcFileBytes) return;
+    
+    try {
+        status.textContent = 'Gerando preview...';
+        
+        const format = document.querySelector('input[name="format"]:checked').value;
+        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
+        
+        let pdfBytes;
+        if (format === 'thermal') {
+            pdfBytes = await processThermal(srcDoc);
+        } else if (format === 'single') {
+            pdfBytes = await processSingle(srcDoc);
+        } else {
+            pdfBytes = await processA4(srcDoc);
+        }
+        
+        previewPdfDoc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+        totalPages = previewPdfDoc.numPages;
+        currentPage = 1;
+        
+        pdfPreviewPlaceholder.style.display = 'none';
+        pdfPreviewCanvas.style.display = 'block';
+        pdfPageNav.style.display = totalPages > 1 ? 'flex' : 'none';
+        
+        await renderPage(currentPage);
+        status.textContent = '';
+    } catch (e) {
+        status.textContent = 'Erro no preview: ' + e.message;
+    }
+}
+
+pdfInput.onchange = async () => {
     const hasFile = pdfInput.files.length > 0;
     processBtn.disabled = !hasFile;
     imprimirBtn.disabled = !hasFile;
+    
+    if (hasFile) {
+        srcFileBytes = await pdfInput.files[0].arrayBuffer();
+        await updatePreview();
+    } else {
+        srcFileBytes = null;
+        pdfPreviewPlaceholder.style.display = 'flex';
+        pdfPreviewCanvas.style.display = 'none';
+        pdfPageNav.style.display = 'none';
+    }
+};
+
+// Atualizar preview quando mudar o formato
+formatRadios.forEach(radio => {
+    radio.addEventListener('change', updatePreview);
+});
+
+prevPageBtn.onclick = async () => {
+    if (currentPage > 1) {
+        currentPage--;
+        await renderPage(currentPage);
+    }
+};
+
+nextPageBtn.onclick = async () => {
+    if (currentPage < totalPages) {
+        currentPage++;
+        await renderPage(currentPage);
+    }
 };
 
 processBtn.onclick = async () => {
@@ -19,8 +119,7 @@ processBtn.onclick = async () => {
         processBtn.disabled = true;
 
         const format = document.querySelector('input[name="format"]:checked').value;
-        const fileBytes = await pdfInput.files[0].arrayBuffer();
-        const srcDoc = await PDFLib.PDFDocument.load(fileBytes);
+        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
 
         let pdfBytes;
         let filename;
@@ -35,9 +134,6 @@ processBtn.onclick = async () => {
             pdfBytes = await processA4(srcDoc);
             filename = 'etiqueta_a4.pdf';
         }
-
-        lastPdfBytes = pdfBytes;
-        lastFilename = filename;
 
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
@@ -62,8 +158,7 @@ imprimirBtn.onclick = async () => {
         imprimirBtn.disabled = true;
 
         const format = document.querySelector('input[name="format"]:checked').value;
-        const fileBytes = await pdfInput.files[0].arrayBuffer();
-        const srcDoc = await PDFLib.PDFDocument.load(fileBytes);
+        const srcDoc = await PDFLib.PDFDocument.load(srcFileBytes);
 
         let pdfBytes;
 
