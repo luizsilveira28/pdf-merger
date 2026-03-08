@@ -255,3 +255,161 @@ input[type="text"]:focus {
     overflow: hidden;
     word-wrap: break-word;
 }
+
+
+.img-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.img-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    cursor: pointer;
+    min-width: 70px;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.img-option:hover {
+    border-color: #ccc;
+}
+
+.img-option.selected {
+    border-color: #EE4D2D;
+    background: #FFF5F3;
+}
+
+.img-option img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: grayscale(100%);
+}
+
+.img-option-icon {
+    font-size: 1.8rem;
+}
+
+/* Etiqueta de Produto */
+.row-inputs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.row-inputs .input-group {
+    flex: 1;
+}
+
+.row-inputs .input-group label {
+    margin-bottom: 5px;
+}
+
+.row-inputs .input-group input {
+    margin-bottom: 0;
+}
+
+.toggle-row {
+    margin-bottom: 15px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.toggle-label input {
+    accent-color: #EE4D2D;
+    width: 18px;
+    height: 18px;
+}
+
+.etiqueta-preview {
+    background: white;
+    border: 1px solid #000;
+    width: 193px;
+    height: 94px;
+    display: flex;
+    font-family: Arial, sans-serif;
+}
+
+.etiqueta-img-container {
+    width: 55px;
+    height: 94px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.etiqueta-preview img {
+    max-width: 53px;
+    max-height: 90px;
+    object-fit: contain;
+    filter: grayscale(100%);
+}
+
+.etiqueta-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2px 2px 2px 0;
+}
+
+.etiqueta-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.etiqueta-tamanho {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #000;
+}
+
+.etiqueta-nome {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #000;
+}
+
+.etiqueta-cor {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #000;
+}
+
+.etiqueta-ref {
+    font-size: 6pt;
+    color: #000;
+}
+
+.etiqueta-detalhes {
+    font-size: 7pt;
+    color: #000;
+}
+
+.etiqueta-info svg {
+    width: 110px;
+    height: 40px;
+    margin-top: 2px;
+}
+
+.etiqueta-preco {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #000;
+    align-self: center;
+}

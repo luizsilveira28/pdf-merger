@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etiqueta de Produto</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+    <nav class="breadcrumb">
+        <a href="index.html">← Voltar</a>
+    </nav>
+    
+    <h1>🏷️ Etiqueta de Produto</h1>
+    <div class="container">
+        <label>Imagem do Produto</label>
+        <div class="img-selector">
+            <div class="img-option selected" data-type="custom">
+                <div class="img-option-icon">📤</div>
+                <span>Enviar</span>
+            </div>
+            <div class="img-option" data-type="mocassim">
+                <img src="" alt="Mocassim" id="imgMocassim">
+                <span>Mocassim</span>
+            </div>
+            <div class="img-option" data-type="alpargata">
+                <img src="" alt="Alpargata" id="imgAlpargata">
+                <span>Alpargata</span>
+            </div>
+        </div>
+        
+        <input type="file" id="imgInput" accept="image/*" style="display: none;">
+
+        <label>Nome do Produto</label>
+        <input type="text" id="nomeProduto" maxlength="25">
+
+        <label>Referência</label>
+        <input type="text" id="refProduto" maxlength="15">
+
+        <div class="row-inputs">
+            <div class="input-group">
+                <label>Cor</label>
+                <input type="text" id="corProduto" maxlength="12">
+            </div>
+            <div class="input-group">
+                <label>Tamanho</label>
+                <input type="text" id="tamanhoProduto" maxlength="6">
+            </div>
+        </div>
+
+        <label>Código de Barras</label>
+        <input type="text" id="codigoBarras" maxlength="13">
+
+        <div class="toggle-row">
+            <label class="toggle-label">
+                <input type="checkbox" id="mostrarPreco">
+                <span>Mostrar preço</span>
+            </label>
+        </div>
+
+        <div id="precoContainer" style="display: none;">
+            <label>Preço</label>
+            <input type="text" id="precoProduto">
+        </div>
+
+        <label>Preview (51mm x 25mm)</label>
+        <div class="preview-container">
+            <div class="etiqueta-preview" id="preview">
+                <div class="etiqueta-img-container">
+                    <img id="previewImg" src="" alt="">
+                </div>
+                <div class="etiqueta-info">
+                    <div class="etiqueta-header">
+                        <div class="etiqueta-nome" id="previewNome">Nome</div>
+                        <div class="etiqueta-tamanho" id="previewTamanho">-</div>
+                    </div>
+                    <div class="etiqueta-cor" id="previewCor">-</div>
+                    <div class="etiqueta-ref" id="previewRef">Ref: -</div>
+                    <svg id="previewBarcode"></svg>
+                    <div class="etiqueta-preco" id="previewPreco" style="display: none;">R$ 0,00</div>
+                </div>
+            </div>
+        </div>
+
+        <button id="gerarBtn">Gerar PDF</button>
+        <p class="status" id="status"></p>
+    </div>
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="js/product-icons.js"></script>
+    <script src="js/product-label.js"></script>
+</body>
+</html>
