@@ -1444,3 +1444,150 @@ button:disabled {
     background: #7F1D1D;
     color: #FCA5A5;
 }
+
+
+/* ========================================
+   INFO SECTIONS (AdSense Content)
+   ======================================== */
+
+.info-section {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 2px solid var(--border-light);
+}
+
+.info-section h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    margin-top: 32px;
+}
+
+.info-section h2:first-child {
+    margin-top: 0;
+}
+
+.info-section p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.features-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.feature-card {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    border: 1px solid var(--border-light);
+}
+
+.feature-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.feature-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    line-height: 1.6;
+}
+
+.how-it-works {
+    list-style: none;
+    counter-reset: steps;
+    padding: 0;
+    margin-bottom: 24px;
+}
+
+.how-it-works li {
+    counter-increment: steps;
+    padding: 12px 0 12px 48px;
+    position: relative;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.how-it-works li:last-child {
+    border-bottom: none;
+}
+
+.how-it-works li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.how-it-works li strong {
+    color: var(--text-primary);
+}
+
+.advantages {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.advantages li {
+    padding: 10px 0;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.advantages li:last-child {
+    border-bottom: none;
+}
+
+.site-footer {
+    text-align: center;
+    padding: 24px 0;
+    margin-top: 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Dark mode for info sections */
+.dark-mode .info-section {
+    border-top-color: var(--border-color);
+}
+
+.dark-mode .feature-card {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.dark-mode .how-it-works li,
+.dark-mode .advantages li {
+    border-bottom-color: var(--border-color);
+}
+
+@media (min-width: 769px) {
+    .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .info-section {
+        margin-top: 48px;
+        padding-top: 40px;
+    }
+}
